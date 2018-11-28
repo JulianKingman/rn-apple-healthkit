@@ -45,11 +45,12 @@
                                                        body:@{@"name": @"change:steps"}];
 
          // If you have subscribed for background updates you must call the completion handler here.
-         // completionHandler();
+         completionHandler();
 
      }];
 
     [self.healthStore executeQuery:query];
+    [self.healthStore enableBackgroundDeliveryForType:observerType frequency:HKUpdateFrequencyImmediate withCompletion:^(BOOL success, NSError *error) {callback(success, error)}];
 }
 
 @end

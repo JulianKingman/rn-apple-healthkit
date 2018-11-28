@@ -228,6 +228,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
 
         // get permissions from input object provided by JS options argument
         NSDictionary* permissions =[input objectForKey:@"permissions"];
+        NSArray* observers = [input objectForKey:@"observers"];
         if(permissions != nil){
             NSArray* readPermsArray = [permissions objectForKey:@"read"];
             NSArray* writePermsArray = [permissions objectForKey:@"write"];
@@ -263,6 +264,20 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                 });
             }
         }];
+
+        // Start observers, if they're defined
+        if(observers != nil) {
+          for(int i=0; i<[observers count]; i++) {
+            NSString *observerKey = options[i];
+            NSString *type = [readPermDict objectForKey:observerKey];
+            options = @{
+              @"type": type
+            };
+            if(val != nil) {
+              [HKHealthStore observers_initializeEventObserverForType:options]
+            }
+          }
+        }
     } else {
         callback(@[RCTMakeError(@"HealthKit data is not available", nil, nil)]);
     }
