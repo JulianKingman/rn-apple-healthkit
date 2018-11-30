@@ -18,6 +18,7 @@
 #import "RCTAppleHealthKit+Methods_Results.h"
 #import "RCTAppleHealthKit+Methods_Sleep.h"
 #import "RCTAppleHealthKit+Methods_Mindfulness.h"
+#import "RCTAppleHealthkit+Oberver_Queries.h"
 
 #import <React/RCTBridgeModule.h>
 #import <React/RCTEventDispatcher.h>
@@ -220,6 +221,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
 
 - (void)initializeHealthKit:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback
 {
+
     self.healthStore = [[HKHealthStore alloc] init];
 
     if ([HKHealthStore isHealthDataAvailable]) {
@@ -228,7 +230,6 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
 
         // get permissions from input object provided by JS options argument
         NSDictionary* permissions =[input objectForKey:@"permissions"];
-        NSArray* observers = [input objectForKey:@"observers"];
         if(permissions != nil){
             NSArray* readPermsArray = [permissions objectForKey:@"read"];
             NSArray* writePermsArray = [permissions objectForKey:@"write"];
@@ -265,16 +266,16 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
             }
         }];
 
+        NSArray* observers = [input objectForKey:@"observers"];
         // Start observers, if they're defined
         if(observers != nil) {
+            RCTLogInfo(@"Starting Observers");
           for(int i=0; i<[observers count]; i++) {
-            NSString *observerKey = options[i];
-            NSString *type = [readPermDict objectForKey:observerKey];
-            options = @{
-              @"type": type
-            };
-            if(val != nil) {
-              [HKHealthStore observers_initializeEventObserverForType:options]
+            NSString *observer = observers[i];
+            if(observer != nil) {
+                [self observers_initializeEventObserverForType:observer callback:^(NSArray* results) {
+                    NSLog(@"Observed");
+                }];
             }
           }
         }

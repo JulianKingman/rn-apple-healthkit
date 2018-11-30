@@ -13,5 +13,6 @@
 
 - (NSSet *)getReadPermsFromOptions:(NSArray *)options;
 - (NSSet *)getWritePermsFromOptions:(NSArray *)options;
+- (NSDictionary *)readPermsDict;
 
 @end
