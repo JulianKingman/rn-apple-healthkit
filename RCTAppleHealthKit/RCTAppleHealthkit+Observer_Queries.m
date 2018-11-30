@@ -50,7 +50,14 @@
          [self fetchMostRecentQuantitySampleOfType:observerType predicate:nil completion:^(HKQuantity *mostRecentQuantity, NSDate *startDate, NSDate *endDate, NSError *error) {
              RCTLogInfo(@"Quantity: %@, start: %@, end: %@, error: %@", mostRecentQuantity, startDate, endDate, error);
              [self.bridge.eventDispatcher sendAppEventWithName:@"change:observed"
-                                                          body:@{@"name": @"change:observed", @"type": observerKey, @"quantity": mostRecentQuantity, @"start": startDate, @"end": endDate, @"error": error}];
+                                                          body:@{
+                                                                 @"name": @"change:observed",
+                                                                 @"type": observerKey,
+                                                                 @"quantity": mostRecentQuantity,
+//                                                                 @"start": startDate,
+//                                                                 @"end": endDate,
+//                                                                 @"error": error
+                                                                 }];
          }];
          
          
