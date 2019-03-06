@@ -42,8 +42,8 @@
          
          if (error) {
              // Perform Proper Error Handling Here...
-             NSLog(@"*** An error occured while setting up the stepCount observer. %@ ***", error.localizedDescription);
-             callback(@[RCTMakeError(@"An error occured while setting up the stepCount observer", error, nil)]);
+             NSLog(@"*** An error occured while setting up the %@ observer. %@ ***", observerKey, error.localizedDescription);
+             callback(@[RCTMakeError(@"An error occured while setting up the observer query", error, nil)]);
              return;
          }
          
