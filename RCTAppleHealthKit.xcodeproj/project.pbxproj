@@ -147,7 +147,7 @@
 		3774C8851D2092F20000B3F3 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0730;
+				LastUpgradeCheck = 730;
 				ORGANIZATIONNAME = "Greg Wilson";
 				TargetAttributes = {
 					3774C88C1D2092F20000B3F3 = {
@@ -236,6 +236,10 @@
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"/Users/kevinmcneish/Projects/HeadsUpHealthApp/headsup-mobile/ios/Pods/Headers/Public/**",
+				);
 			};
 			name = Debug;
 		};
@@ -274,6 +278,10 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = iphoneos;
 				VALIDATE_PRODUCT = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"/Users/kevinmcneish/Projects/HeadsUpHealthApp/headsup-mobile/ios/Pods/Headers/Public/**",
+				);
 			};
 			name = Release;
 		};
@@ -283,6 +291,7 @@
 				HEADER_SEARCH_PATHS = (
 					"$(SRCROOT)/../../react-native/React/**",
 					"$(SRCROOT)/../../../React/**",
+					"/Users/kevinmcneish/Projects/HeadsUpHealthApp/headsup-mobile/ios/Pods/Headers/Public/**",
 				);
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -296,6 +305,7 @@
 				HEADER_SEARCH_PATHS = (
 					"$(SRCROOT)/../../react-native/React/**",
 					"$(SRCROOT)/../../../React/**",
+					"/Users/kevinmcneish/Projects/HeadsUpHealthApp/headsup-mobile/ios/Pods/Headers/Public/**",
 				);
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = "$(TARGET_NAME)";
