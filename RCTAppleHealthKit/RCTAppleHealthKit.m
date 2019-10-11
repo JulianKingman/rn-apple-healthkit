@@ -346,7 +346,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         [dateFormatter setDateFormat:@"yyyy-MM-dd"];
         startDate = [dateFormatter dateFromString:startDateString];
         endDate = [dateFormatter dateFromString:endDateString];
-        predicate = [HKQuery predicateForSamplesWithStartDate:[[NSDate date]dateByAddingTimeInterval:-7*24*60*60] endDate:[NSDate date] options:HKQueryOptionNone];
+        predicate = [HKQuery predicateForSamplesWithStartDate:startDate endDate:endDate options:HKQueryOptionNone];
     }
     [self readHealthKitData:input predicate:predicate callback:callback];
 }
