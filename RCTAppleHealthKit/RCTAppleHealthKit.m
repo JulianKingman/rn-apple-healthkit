@@ -26,7 +26,7 @@
 @implementation RCTAppleHealthKit
 @synthesize bridge = _bridge;
 
-const int MAX_RECORDS = 500;
+const int MAX_RECORDS = 200;
 
 RCT_EXPORT_MODULE();
 
@@ -35,7 +35,20 @@ RCT_EXPORT_METHOD(isAvailable:(RCTResponseSenderBlock)callback)
     [self isHealthKitAvailable:callback];
 }
 
-//Akshay
+// Persists the anchors from the previous call to HealthKit
+RCT_EXPORT_METHOD(dropAnchors:(NSDictionary *)input
+    callback:(RCTResponseSenderBlock)callback)
+{
+    [self dropHealthKitAnchors:input callback:callback];
+}
+
+// Clears all anchors for HealthKit
+RCT_EXPORT_METHOD(clearAnchors:(NSDictionary *)input
+    callback:(RCTResponseSenderBlock)callback)
+{
+    [self clearHealthKitAnchors:input callback:callback];
+}
+
 RCT_EXPORT_METHOD(readHealthDataByAnchor:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback)
 {
     [self readHealthKitData:input predicate:nil callback:callback];
@@ -227,6 +240,29 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
     [self mindfulness_saveMindfulSession:input callback:callback];
 }
 
+// Saves all anchors from the previous 
+-(void)dropHealthKitAnchors:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback {
+    
+    for (NSString* key in self.anchorsToDrop) {
+        HKQueryAnchor *anchor = self.anchorsToDrop[key];
+        [self saveCustomObject:anchor withKey:[NSString stringWithFormat:@"newAnchor%@",key]];
+    }
+    callback(@[[NSNull null], @true]);
+}
+
+// Clears all anchors
+-(void)clearHealthKitAnchors:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback
+{
+    for (id key in self.readPermsDict) {
+        HKQuantityType *value = [self.readPermsDict objectForKey:key];
+        
+        bool anchorExists = [[NSUserDefaults standardUserDefaults]valueForKey:[NSString stringWithFormat:@"newAnchor%@",value.identifier]] != nil;
+        
+        [self deleteCustomObjectWithKey:[NSString stringWithFormat:@"newAnchor%@",value.identifier]];
+    }
+    callback(@[[NSNull null], @true]);
+}
+
 -(void)isHealthKitAvailable:(RCTResponseSenderBlock)callback {
     BOOL isAvailable = NO;
     if ([HKHealthStore isHealthDataAvailable]) {
@@ -373,7 +409,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
     
     NSSet* types = [self getReadPermsFromOptions:readPermsArray];
     self.jsonObject = [[NSMutableDictionary alloc] init];
-    self.overflowAnchors = [[NSMutableDictionary alloc] init];
+    self.anchorsToDrop = [[NSMutableDictionary alloc] init];
     
     HKQuantityType *key;
     self.typeCount = 0;
@@ -476,19 +512,14 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         [self.jsonObject setObject:jsonArray forKey:key.identifier];
     }
     
-    // Persist the anchor object for use in the next query
-    // so only records newer than the anchor are returned
+    // Add the anchor object to the list of anchors to be dropped (saved)
+    // for use in the next query so only records newer than the anchor are returned
+    // Anchors are dropped when JS calls back to the DropAnchor() function after
+    // all readings have been successfully uploaded.
     if (anchor != nil) {
-        if (allObjects.count <= MAX_RECORDS) {
-            [self saveCustomObject:anchor withKey:[NSString stringWithFormat:@"newAnchor%@",key.identifier]];
-        }
-        else
-        {
-            // Need to upload in batches. Wait to save the anchor until complete
-            [self.overflowAnchors setObject:anchor forKey:key.identifier];
-        }
+        //
+        [self.anchorsToDrop setObject:anchor forKey:key.identifier];
     }
-
     
     self.typeCount++;
     if (self.typeCount == typesCount) {
@@ -513,8 +544,9 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         NSLog(@"11xxx02. callBackHealthKitResults() key:%@ count:%i", key, (int)typeArray.count);
         if (typeArray.count > MAX_RECORDS) {
             NSRange range;
-            range.location = MAX_RECORDS - 1;
+            range.location = MAX_RECORDS;
             range.length = typeArray.count - MAX_RECORDS;
+            
             // Create an array with the overflow items
             NSMutableArray *overflowArray = [NSMutableArray arrayWithArray:[typeArray subarrayWithRange:range]];
             NSLog(@"11xxx03. callBackHealthKitResults() overflowArray.count:%i",(int)overflowArray.count);
@@ -524,14 +556,6 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
             // Temporarily add the overflow items to an object
             [jsonOverflowObject setObject:overflowArray forKey:key];
             self.isBackgroundUploadInProgress = true;
-        }
-        else {
-            if (self.wasBackgroundUploadInProgress) {
-                HKQueryAnchor *anchor = [self.overflowAnchors objectForKey:key];
-                if (anchor != nil) {
-                    [self saveCustomObject:anchor withKey:[NSString stringWithFormat:@"newAnchor%@",key]];
-                }
-            }
         }
         
         NSString *headsUpType = [self getHeadsUpTypeFromHealthKitType:key];
@@ -559,12 +583,14 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
     if ([self.jsonCallbackObject count] == 0)
     {
         // return a null to indicate background download complete
+        NSLog(@"11xxx07a. callBackHealthKitResults() return null");
         callback(@[[NSNull null], [NSNull null]]);
         //callback(@[@[self.jsonCallbackObject], [NSNull null]]);
 
     }
     else
     {
+        NSLog(@"11xxx07b. callBackHealthKitResults() return count: %i", (int)[self.jsonCallbackObject count]);
         callback(@[@[self.jsonCallbackObject], [NSNull null]]);
     }
 }
@@ -1533,6 +1559,12 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
     NSUserDefaults *prefs = [NSUserDefaults standardUserDefaults];
     NSData *myEncodedObject = [NSKeyedArchiver archivedDataWithRootObject:object];
     [prefs setObject:myEncodedObject forKey:strKey];
+}
+
+-(void)deleteCustomObjectWithKey:(NSString *)strKey
+{
+    NSUserDefaults *prefs = [NSUserDefaults standardUserDefaults];
+    [prefs removeObjectForKey:strKey];
 }
 
 -(HKQueryAnchor *)loadCustomObjectWithKey:(NSString*)key
