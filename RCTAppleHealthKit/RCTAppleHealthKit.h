@@ -17,8 +17,10 @@
 
 @property (nonatomic) HKHealthStore *healthStore;
 @property (nonatomic) NSMutableDictionary *jsonObject;
+@property (nonatomic) NSMutableDictionary *jsonDeletedObject;
 @property (nonatomic) NSMutableDictionary *jsonCallbackObject;
-@property (nonatomic) NSMutableDictionary *overflowAnchors;
+@property (nonatomic) NSMutableDictionary *jsonDeletedCallbackObject;
+@property (nonatomic) NSMutableDictionary *anchorsToDrop;
 @property (nonatomic) bool isBackgroundUploadInProgress;
 @property (nonatomic) bool wasBackgroundUploadInProgress;
 @property (nonatomic) __block int typeCount;

@@ -26,7 +26,7 @@
 @implementation RCTAppleHealthKit
 @synthesize bridge = _bridge;
 
-const int MAX_RECORDS = 200;
+const int MAX_RECORDS = 500;
 
 RCT_EXPORT_MODULE();
 
@@ -256,8 +256,6 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
     for (id key in self.readPermsDict) {
         HKQuantityType *value = [self.readPermsDict objectForKey:key];
         
-        bool anchorExists = [[NSUserDefaults standardUserDefaults]valueForKey:[NSString stringWithFormat:@"newAnchor%@",value.identifier]] != nil;
-        
         [self deleteCustomObjectWithKey:[NSString stringWithFormat:@"newAnchor%@",value.identifier]];
     }
     callback(@[[NSNull null], @true]);
@@ -326,27 +324,6 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
             }
         }];
         
-        //Akshay
-        //        NSArray* observers = [input objectForKey:@"observers"];
-        //        // Start observers, if they're defined
-        //        if(observers != nil) {
-        //            RCTLogInfo(@"Starting Observers");
-        //          for(int i=0; i<[observers count]; i++) {
-        //            NSDictionary *observer = observers[i];//NSString to NSDictionary Akshay
-        //            if(observer != nil) {
-        //                NSString *str = [observer objectForKey:@"type"];
-        //                NSDictionary *dict = [self readPermsDict];
-        //                HKSampleType *objType = [dict valueForKey:str];
-        //                //Akshay
-        //                //[self setUpBackgroundDeliveryForSingleObjectType:objType];
-        //                //Over
-        //
-        ////                [self observers_initializeEventObserverForType:observer callback:^(NSArray* results) {
-        ////                    NSLog(@"Observed");
-        ////                }];
-        //            }
-        //          }
-        //        }
     } else {
         callback(@[RCTMakeError(@"HealthKit data is not available", nil, nil)]);
     }
@@ -393,11 +370,13 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
     
     // Don't get new data until all previous data is processed
     if (self.isBackgroundUploadInProgress) {
+        self.jsonDeletedObject = [[NSMutableDictionary alloc] init]; // Clear since processed all at once
         [self callBackHealthKitResults:callback];
         return;
     }
     else if(self.wasBackgroundUploadInProgress) {
         self.wasBackgroundUploadInProgress = false;
+        self.jsonDeletedObject = [[NSMutableDictionary alloc] init];    // Clear since processed all at once
         // return a null to indicate background download complete
         callback(@[[NSNull null], [NSNull null]]);
         return;
@@ -409,6 +388,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
     
     NSSet* types = [self getReadPermsFromOptions:readPermsArray];
     self.jsonObject = [[NSMutableDictionary alloc] init];
+    self.jsonDeletedObject = [[NSMutableDictionary alloc] init];
     self.anchorsToDrop = [[NSMutableDictionary alloc] init];
     
     HKQuantityType *key;
@@ -464,7 +444,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                     
                     // If this is not the first time through, look at the initial queryForUpdates
                     // results and set a start and end date accordingly
-                    if (!isFirstQueryForType && allObjects.count > 0) {
+                    if (!isFirstQueryForType && (allObjects.count > 0 || deletedObjects.count > 0)) {
                         // Make sure all records are sorted by startDate
                         NSSortDescriptor * descriptor = [[NSSortDescriptor alloc] initWithKey:@"startDate" ascending:YES];
                         allObjects = [allObjects sortedArrayUsingDescriptors:@[descriptor]];
@@ -487,21 +467,29 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                                            userid:userid
                                        completion:^(NSArray * allObjects, NSError *error) {
                                            
-                                           [self processHealthKitResult:allObjects callback:callback key:key typesCount:types.count anchor:anchor];
+                                            // TODO: Check out alternative ways of tracking deleted records for summary
+                                            NSArray *emptyDeletedObjects = [[NSArray alloc] init];
+
+                                           [self processHealthKitResult:allObjects
+                                                         deletedObjects:emptyDeletedObjects
+                                                               callback:callback key:key typesCount:types.count anchor:anchor];
                                        }];
                 }
                 else
                 {
-                    [self processHealthKitResult:allObjects callback:callback key:key typesCount:types.count anchor:anchor];
+                    [self processHealthKitResult:allObjects
+                                  deletedObjects:deletedObjects
+                                        callback:callback key:key typesCount:types.count anchor:anchor];
                 }
             }];
         }
     }
 }
 
-// Add the results returned from HealthKit to the jsonObject
+// Add the results returned from HealthKit for a specific reading type to the jsonObject
 // If finished, call back to JS
--(void)processHealthKitResult:(NSArray *)allObjects callback:(RCTResponseSenderBlock)callback key:(HKQuantityType *)key typesCount:(NSUInteger)typesCount anchor:(HKQueryAnchor *)anchor
+-(void)processHealthKitResult:(NSArray *)allObjects
+               deletedObjects:(NSArray *)deletedObjects callback:(RCTResponseSenderBlock)callback key:(HKQuantityType *)key typesCount:(NSUInteger)typesCount anchor:(HKQueryAnchor *)anchor
 {
     if (allObjects.count > 0) {
         // Sort newest to oldest
@@ -510,6 +498,10 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         
         NSMutableArray *jsonArray = [self buildJSONArrayFromHealthKitArray:allObjects type:key];
         [self.jsonObject setObject:jsonArray forKey:key.identifier];
+    }
+    
+    if (deletedObjects.count > 0) {
+        [self.jsonDeletedObject setObject:deletedObjects forKey:key.identifier];
     }
     
     // Add the anchor object to the list of anchors to be dropped (saved)
@@ -534,6 +526,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
     self.wasBackgroundUploadInProgress = self.isBackgroundUploadInProgress;
     self.isBackgroundUploadInProgress = false;
     self.jsonCallbackObject = [[NSMutableDictionary alloc] init];
+    self.jsonDeletedCallbackObject = [[NSMutableDictionary alloc] init];
     NSMutableDictionary *jsonOverflowObject = [[NSMutableDictionary alloc] init];
     
     // Copy the results from jsonObject to jsonCallbackObject
@@ -562,6 +555,17 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         [self.jsonCallbackObject setObject:typeArray forKey:headsUpType];
     }
     
+    // Copy the results from jsonDeletedObject to jsonDeletedCallbackObject
+    // add any overflow items to a temporary object
+    // (since you can't change the object you're iterating over)
+    for (NSString *key in self.jsonDeletedObject) {
+        NSMutableArray *typeArray = [self.jsonDeletedObject objectForKey:key];
+        NSLog(@"11xxx02. callBackHealthKitResults() key:%@ count:%i", key, (int)typeArray.count);
+        
+        NSString *headsUpType = [self getHeadsUpTypeFromHealthKitType:key];
+        [self.jsonDeletedCallbackObject setObject:typeArray forKey:headsUpType];
+    }
+    
     if (self.isBackgroundUploadInProgress) {
         // Recreate the jsonObject and copy all overflow items to it for the next call
         self.jsonObject = [[NSMutableDictionary alloc] init];
@@ -580,18 +584,19 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
     NSLog(@"11xxx07. callBackHealthKitResults() callback to JS");
     
     // Make sure there are readings
-    if ([self.jsonCallbackObject count] == 0)
+    if ([self.jsonCallbackObject count] == 0 && [self.jsonDeletedCallbackObject count] == 0 )
     {
         // return a null to indicate background download complete
         NSLog(@"11xxx07a. callBackHealthKitResults() return null");
         callback(@[[NSNull null], [NSNull null]]);
-        //callback(@[@[self.jsonCallbackObject], [NSNull null]]);
-
     }
     else
     {
         NSLog(@"11xxx07b. callBackHealthKitResults() return count: %i", (int)[self.jsonCallbackObject count]);
-        callback(@[@[self.jsonCallbackObject], [NSNull null]]);
+        NSMutableDictionary *jsonFinalObject = [[NSMutableDictionary alloc] init];
+        [jsonFinalObject setObject: self.jsonCallbackObject forKey:@"added"];
+        [jsonFinalObject setObject: self.jsonDeletedCallbackObject forKey:@"deleted"];
+        callback(@[@[jsonFinalObject], [NSNull null]]);
     }
 }
 
@@ -2019,135 +2024,135 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                           
                           // Completion handler called from HKAnchoredObjectQuery
                           if(results) {
-                              
-                              // Create an array of dictionary objects from the query results
-                              NSMutableArray *arr = [[NSMutableArray alloc] init];
-                              NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
-                              [dateFormatter setDateFormat:@"yyyy-MM-dd'T'HH:mm"];
-                              HKQuantityType *systolicType = [HKQuantityType quantityTypeForIdentifier:HKQuantityTypeIdentifierBloodPressureSystolic];
-                              HKQuantityType *diastolicType = [HKQuantityType quantityTypeForIdentifier:HKQuantityTypeIdentifierBloodPressureDiastolic];
-                              
-                              for (int i=0; i<results.count; i++) {
-                                  HKQuantitySample *qty = [results objectAtIndex:i];
-                                  
-                                  NSDate *startDate = qty.startDate;
-                                  NSDate *endDate = qty.endDate;
-                                  
-                                  NSTimeInterval startTimeStamp  = [startDate timeIntervalSince1970];
-                                  NSTimeInterval endTimeStamp  = [endDate timeIntervalSince1970];
-                                  NSString *startTime = [NSString stringWithFormat:@"%f",startTimeStamp];
-                                  NSString *endTime = [NSString stringWithFormat:@"%f",endTimeStamp];
-                                  
-                                  NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
-                                  [dict setValue:startTime forKey:@"startTimestamp"];
-                                  [dict setValue:endTime forKey:@"endTimestamp"];
-                                  [dict setValue:[dateFormatter stringFromDate:startDate] forKey:@"startDate"];
-                                  [dict setValue:[dateFormatter stringFromDate:endDate] forKey:@"endDate"];
-                                  HKQuantity *qtyVal;
-                                  HKQuantity *qtyVal2;
-                                  double doubleValue = 0.0;
-                                  double doubleValue2 = 0.0;
-                                  
-                                  // Check if it's an HKCorrelation
-                                  if ([qty isKindOfClass:[HKCorrelation class]]) {
-                                      HKCorrelation *correlation = (HKCorrelation *)qty;
-                                      
-                                      if ([type.identifier isEqualToString:@"HKQuantityTypeIdentifierBloodPressureSystolic"] ||
-                                          [type.identifier isEqualToString:@"HKQuantityTypeIdentifierBloodPressureDiastolic"]) {
-                                          HKQuantitySample *bloodPressureSystolicValue = [correlation objectsForType:systolicType].anyObject;
-                                          HKQuantitySample *bloodPressureDiastolicValue = [correlation objectsForType:diastolicType].anyObject;
-                                          qtyVal = bloodPressureDiastolicValue.quantity;
-                                          qtyVal2 = bloodPressureSystolicValue.quantity;
-                                      }
-                                      NSString *strQTYType = [NSString stringWithFormat:@"%@", correlation.correlationType];
-                                      [dict setValue:strQTYType forKey:@"quantityType"];
-                                      NSString *strSampleType = [NSString stringWithFormat:@"%@",correlation.correlationType];
-                                      [dict setValue:strSampleType forKey:@"sampleType"];
-                                  }
-                                  else {
-                                      qtyVal = qty.quantity;
-                                      NSString *strQTYType = [NSString stringWithFormat:@"%@",qty.quantityType];
-                                      [dict setValue:strQTYType forKey:@"quantityType"];
-                                      NSString *strSampleType = [NSString stringWithFormat:@"%@",qty.quantityType];
-                                      [dict setValue:strSampleType forKey:@"sampleType"];
-                                  }
-                                  
-                                  // Derive the unit - mmHg for blood pressure
-                                  NSString *strQtyValue = [NSString stringWithFormat:@"%@", qtyVal];
-                                  NSArray *arrSplitValueUnit = [strQtyValue componentsSeparatedByString:@" "];
-                                  NSString *strUnit = @"";
-                                  if (arrSplitValueUnit.count >= 2) {
-                                      strUnit = [arrSplitValueUnit objectAtIndex:1];
-                                  }
-                                  else {
-                                      NSString *qtyTypeIdentifier = [NSString stringWithFormat:@"%@",qty.quantityType];
-                                      strUnit = [self getDictKeyAndUnit:qtyTypeIdentifier keyUnit:2];
-                                  }
-                                  [dict setValue:strUnit forKey:@"unit"];
-                                  
-                                  if ([type.identifier isEqualToString:@"HKQuantityTypeIdentifierHeartRate"] || [type.identifier isEqualToString:@"HKQuantityTypeIdentifierRespiratoryRate"]) {
-                                      doubleValue = [qtyVal doubleValueForUnit:[HKUnit unitFromString:@"count/min"]];
-                                  }
-                                  else if ([type.identifier isEqualToString:@"HKQuantityTypeIdentifierBodyMassIndex"]) {
-                                      doubleValue = [qtyVal doubleValueForUnit:[HKUnit unitFromString:@"count"]];
-                                  }
-                                  else if ([type.identifier isEqualToString:@"HKQuantityTypeIdentifierFlightsClimbed"]) {
-                                      doubleValue = [qtyVal doubleValueForUnit:[HKUnit unitFromString:@"count"]];
-                                  }
-                                  else {
-                                      doubleValue = [qtyVal doubleValueForUnit:unit];
-                                  }
-                                  
-                                  if ([type.identifier isEqualToString:@"HKQuantityTypeIdentifierBloodPressureSystolic"] ||
-                                      [type.identifier isEqualToString:@"HKQuantityTypeIdentifierBloodPressureDiastolic"]) {
-                                      int intValue = (int)floor(doubleValue);
-                                      [dict setValue:[NSString stringWithFormat:@"%i",intValue] forKey:@"value"];
-                                  }
-                                  else {
-                                      NSString *strQTY = [NSString stringWithFormat:@"%f",doubleValue];
-                                      [dict setValue:strQTY forKey:@"value"];
-                                  }
-                                  
-                                  // Need to get second value if it's a correlation
-                                  if ([qty isKindOfClass:[HKCorrelation class]]) {
-                                      doubleValue2 = [qtyVal2 doubleValueForUnit:unit];
-                                      if ([type.identifier isEqualToString:@"HKQuantityTypeIdentifierBloodPressureSystolic"] ||
-                                          [type.identifier isEqualToString:@"HKQuantityTypeIdentifierBloodPressureDiastolic"]) {
-                                          int intValue = (int)floor(doubleValue2);
-                                          [dict setValue:[NSString stringWithFormat:@"%i",intValue] forKey:@"value2"];
-                                      }
-                                      else {
-                                          NSString *strQTY2 = [NSString stringWithFormat:@"%f",doubleValue2];
-                                          [dict setValue:strQTY2 forKey:@"value2"];
-                                      }
-                                  }
-                                  
-                                  NSString *strSourceName = qty.sourceRevision.source.name;
-                                  [dict setValue:strSourceName forKey:@"source"];
-                                  
-                                  NSString *strUUID = [NSString stringWithFormat:@"%@",qty.UUID];
-                                  [dict setValue:strUUID forKey:@"UUID"];
-                                  
-                                  NSString *strDevice = [NSString stringWithFormat:@"%@",qty.device];
-                                  [dict setValue:strDevice forKey:@"device"];
-                                  
-                                  //NSLog(@"dict:%@",dict);
-                                  [arr addObject:dict];
-                              }
-                              
+                              NSMutableArray *arrayAdded = [self createReadingsDictionaryFromArray:results type:type unit:unit];
+                              NSMutableArray *arrayDeleted = [arrDeleted mutableCopy];
                               // Call the completion handler
-                              completion(arr, [arrDeleted mutableCopy], nil, anchor);
-                              
-                              // Write the array of dictionary objects to a JSON file
-                              //NSLog(@"00xxxc11. writeDictNewDataToFile()");
-                              
-                              //[self writeDictNewDataToFile:type.identifier values:nil arrayAddedObject:arr values:[arrDeleted mutableCopy]];
+                              completion(arrayAdded, arrayDeleted, nil, anchor);
                           }
                           else {
                               NSLog(@"Error fetching samples from HealthKit: %@", error);
                               completion(nil, nil, error, anchor);
                           }
                       }];
+}
+
+-(NSMutableArray *)createReadingsDictionaryFromArray:(NSArray *)results type:(HKQuantityType *)type unit:(HKUnit *)unit
+{
+    // Create an array of dictionary objects from the query results
+    NSMutableArray *arr = [[NSMutableArray alloc] init];
+    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+    [dateFormatter setDateFormat:@"yyyy-MM-dd'T'HH:mm"];
+    HKQuantityType *systolicType = [HKQuantityType quantityTypeForIdentifier:HKQuantityTypeIdentifierBloodPressureSystolic];
+    HKQuantityType *diastolicType = [HKQuantityType quantityTypeForIdentifier:HKQuantityTypeIdentifierBloodPressureDiastolic];
+    
+    for (int i=0; i<results.count; i++) {
+        HKQuantitySample *qty = [results objectAtIndex:i];
+        
+        NSDate *startDate = qty.startDate;
+        NSDate *endDate = qty.endDate;
+        
+        NSTimeInterval startTimeStamp  = [startDate timeIntervalSince1970];
+        NSTimeInterval endTimeStamp  = [endDate timeIntervalSince1970];
+        NSString *startTime = [NSString stringWithFormat:@"%f",startTimeStamp];
+        NSString *endTime = [NSString stringWithFormat:@"%f",endTimeStamp];
+        
+        NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+        [dict setValue:startTime forKey:@"startTimestamp"];
+        [dict setValue:endTime forKey:@"endTimestamp"];
+        [dict setValue:[dateFormatter stringFromDate:startDate] forKey:@"startDate"];
+        [dict setValue:[dateFormatter stringFromDate:endDate] forKey:@"endDate"];
+        HKQuantity *qtyVal;
+        HKQuantity *qtyVal2;
+        double doubleValue = 0.0;
+        double doubleValue2 = 0.0;
+        
+        // Check if it's an HKCorrelation
+        if ([qty isKindOfClass:[HKCorrelation class]]) {
+            HKCorrelation *correlation = (HKCorrelation *)qty;
+            
+            if ([type.identifier isEqualToString:@"HKQuantityTypeIdentifierBloodPressureSystolic"] ||
+                [type.identifier isEqualToString:@"HKQuantityTypeIdentifierBloodPressureDiastolic"]) {
+                HKQuantitySample *bloodPressureSystolicValue = [correlation objectsForType:systolicType].anyObject;
+                HKQuantitySample *bloodPressureDiastolicValue = [correlation objectsForType:diastolicType].anyObject;
+                qtyVal = bloodPressureDiastolicValue.quantity;
+                qtyVal2 = bloodPressureSystolicValue.quantity;
+            }
+            NSString *strQTYType = [NSString stringWithFormat:@"%@", correlation.correlationType];
+            [dict setValue:strQTYType forKey:@"quantityType"];
+            NSString *strSampleType = [NSString stringWithFormat:@"%@",correlation.correlationType];
+            [dict setValue:strSampleType forKey:@"sampleType"];
+        }
+        else {
+            qtyVal = qty.quantity;
+            NSString *strQTYType = [NSString stringWithFormat:@"%@",qty.quantityType];
+            [dict setValue:strQTYType forKey:@"quantityType"];
+            NSString *strSampleType = [NSString stringWithFormat:@"%@",qty.quantityType];
+            [dict setValue:strSampleType forKey:@"sampleType"];
+        }
+        
+        // Derive the unit - mmHg for blood pressure
+        NSString *strQtyValue = [NSString stringWithFormat:@"%@", qtyVal];
+        NSArray *arrSplitValueUnit = [strQtyValue componentsSeparatedByString:@" "];
+        NSString *strUnit = @"";
+        if (arrSplitValueUnit.count >= 2) {
+            strUnit = [arrSplitValueUnit objectAtIndex:1];
+        }
+        else {
+            NSString *qtyTypeIdentifier = [NSString stringWithFormat:@"%@",qty.quantityType];
+            strUnit = [self getDictKeyAndUnit:qtyTypeIdentifier keyUnit:2];
+        }
+        [dict setValue:strUnit forKey:@"unit"];
+        
+        if ([type.identifier isEqualToString:@"HKQuantityTypeIdentifierHeartRate"] || [type.identifier isEqualToString:@"HKQuantityTypeIdentifierRespiratoryRate"]) {
+            doubleValue = [qtyVal doubleValueForUnit:[HKUnit unitFromString:@"count/min"]];
+        }
+        else if ([type.identifier isEqualToString:@"HKQuantityTypeIdentifierBodyMassIndex"]) {
+            doubleValue = [qtyVal doubleValueForUnit:[HKUnit unitFromString:@"count"]];
+        }
+        else if ([type.identifier isEqualToString:@"HKQuantityTypeIdentifierFlightsClimbed"]) {
+            doubleValue = [qtyVal doubleValueForUnit:[HKUnit unitFromString:@"count"]];
+        }
+        else {
+            doubleValue = [qtyVal doubleValueForUnit:unit];
+        }
+        
+        if ([type.identifier isEqualToString:@"HKQuantityTypeIdentifierBloodPressureSystolic"] ||
+            [type.identifier isEqualToString:@"HKQuantityTypeIdentifierBloodPressureDiastolic"]) {
+            int intValue = (int)floor(doubleValue);
+            [dict setValue:[NSString stringWithFormat:@"%i",intValue] forKey:@"value"];
+        }
+        else {
+            NSString *strQTY = [NSString stringWithFormat:@"%f",doubleValue];
+            [dict setValue:strQTY forKey:@"value"];
+        }
+        
+        // Need to get second value if it's a correlation
+        if ([qty isKindOfClass:[HKCorrelation class]]) {
+            doubleValue2 = [qtyVal2 doubleValueForUnit:unit];
+            if ([type.identifier isEqualToString:@"HKQuantityTypeIdentifierBloodPressureSystolic"] ||
+                [type.identifier isEqualToString:@"HKQuantityTypeIdentifierBloodPressureDiastolic"]) {
+                int intValue = (int)floor(doubleValue2);
+                [dict setValue:[NSString stringWithFormat:@"%i",intValue] forKey:@"value2"];
+            }
+            else {
+                NSString *strQTY2 = [NSString stringWithFormat:@"%f",doubleValue2];
+                [dict setValue:strQTY2 forKey:@"value2"];
+            }
+        }
+        
+        NSString *strSourceName = qty.sourceRevision.source.name;
+        [dict setValue:strSourceName forKey:@"source"];
+        
+        NSString *strUUID = [NSString stringWithFormat:@"%@",qty.UUID];
+        [dict setValue:strUUID forKey:@"UUID"];
+        
+        NSString *strDevice = [NSString stringWithFormat:@"%@",qty.device];
+        [dict setValue:strDevice forKey:@"device"];
+        
+        //NSLog(@"dict:%@",dict);
+        [arr addObject:dict];
+    }
+    return arr;
 }
 
 -(void)fetchIndividualRecords :(HKQuantityType *)type unit:(HKUnit *)unit predicate:(NSPredicate *)predicate ascending:(BOOL)asc limit:(NSUInteger)lim completion:(void (^)(NSArray *,NSArray *, NSError *, HKQueryAnchor *))completion {
@@ -2177,43 +2182,35 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
     }
     
     // Create the anchored object query
-    HKAnchoredObjectQuery *query = [[HKAnchoredObjectQuery alloc]initWithType:sampleType
-                                                                    predicate:predicate
-                                                                       anchor:newAnchor
-                                                                        limit:HKObjectQueryNoLimit
-                                                               resultsHandler:^(HKAnchoredObjectQuery * _Nonnull query,
-                                                                                NSArray<__kindof HKSample *> * _Nullable sampleObjects,
-                                                                                NSArray<HKDeletedObject *> * _Nullable deletedObjects,
-                                                                                HKQueryAnchor * _Nullable newAnchor,
-                                                                                NSError * _Nullable error) {
+    HKAnchoredObjectQuery *query =
+        [[HKAnchoredObjectQuery alloc]initWithType:sampleType
+                                         predicate:predicate
+                                            anchor:newAnchor
+                                             limit:HKObjectQueryNoLimit
+                                    resultsHandler:^(HKAnchoredObjectQuery * _Nonnull query,
+                                                     NSArray<__kindof HKSample *> * _Nullable sampleObjects,
+                                                     NSArray<HKDeletedObject *> * _Nullable deletedObjects,
+                                                     HKQueryAnchor * _Nullable newAnchor,
+                                                     NSError * _Nullable error) {
                                                                    
-                                                                   NSLog(@"00xxxc9 fetchIndividualRecords() return from executeQuery");
-                                                                   NSMutableArray *arrUUID = [[NSMutableArray alloc]init];
-                                                                   
-                                                                   for (HKDeletedObject *objdelete in deletedObjects) {
-                                                                       NSString *strUUID = [NSString stringWithFormat:@"%@",objdelete.UUID];
-                                                                       [arrUUID addObject:strUUID];
-                                                                   }
-                                                                   
-                                                                   NSLog(@"00xxxc10 HKAnchoredObjectQuery resultsHandler() Type:%@ sampleObjects.count:%lu deletedObjects.count:%lu",
-                                                                         type.identifier,
-                                                                         sampleObjects.count,
-                                                                         deletedObjects.count);
-                                                                   
-                                                                   // If start/end dates have been passed, don't return an anchor
-                                                                   if (predicate != nil) {
-                                                                       newAnchor = nil;
-                                                                   }
-                                                                   
-                                                                   completion(sampleObjects, arrUUID, error, newAnchor);
-                                                                   
-                                                               }];
-    /*
-     HKSampleQuery *qry = [[HKSampleQuery alloc] initWithSampleType:type predicate:nil limit:HKObjectQueryNoLimit sortDescriptors:nil resultsHandler:^(HKSampleQuery * _Nonnull query, NSArray<__kindof HKSample *> * _Nullable results, NSError * _Nullable error) {
-     completion(results,error);
-     }];
-     [self.healthStore executeQuery:qry];
-     */
+            NSLog(@"00xxxc10 HKAnchoredObjectQuery resultsHandler() Type:%@ sampleObjects.count:%lu deletedObjects.count:%lu",
+                  type.identifier,
+                  (unsigned long)sampleObjects.count,
+                  (unsigned long)deletedObjects.count);
+        
+            NSMutableArray *arrUUID = [[NSMutableArray alloc]init];
+        
+            for (HKDeletedObject *objdelete in deletedObjects) {
+                NSString *strUUID = [NSString stringWithFormat:@"%@",objdelete.UUID];
+                [arrUUID addObject:strUUID];
+            }
+
+            // If start/end dates have been passed, don't return an anchor
+            if (predicate != nil) {
+                newAnchor = nil;
+            }
+            completion(sampleObjects, arrUUID, error, newAnchor);
+        }];
     
     NSLog(@"00xxxc9 fetchIndividualRecords() execute query");
     
