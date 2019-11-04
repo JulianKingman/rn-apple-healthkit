@@ -596,6 +596,12 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         NSMutableDictionary *jsonFinalObject = [[NSMutableDictionary alloc] init];
         [jsonFinalObject setObject: self.jsonCallbackObject forKey:@"added"];
         [jsonFinalObject setObject: self.jsonDeletedCallbackObject forKey:@"deleted"];
+        if (!self.isBackgroundUploadInProgress) {
+            // Need to set this flag when there were no overflow objects,
+            // so the next call to readHealthKitData() returns NULL
+            
+            self.wasBackgroundUploadInProgress = true;
+        }
         callback(@[@[jsonFinalObject], [NSNull null]]);
     }
 }
@@ -2024,8 +2030,15 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                           
                           // Completion handler called from HKAnchoredObjectQuery
                           if(results) {
+                              // TEMP
+                              if (type.identifier == HKQuantityTypeIdentifierBodyMass) {
+                                  NSLog(@"getIndividualRecords() results.count = %i", results.count);
+                              }
+                              
                               NSMutableArray *arrayAdded = [self createReadingsDictionaryFromArray:results type:type unit:unit];
                               NSMutableArray *arrayDeleted = [arrDeleted mutableCopy];
+                              
+
                               // Call the completion handler
                               completion(arrayAdded, arrayDeleted, nil, anchor);
                           }
@@ -2101,7 +2114,6 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
             NSString *qtyTypeIdentifier = [NSString stringWithFormat:@"%@",qty.quantityType];
             strUnit = [self getDictKeyAndUnit:qtyTypeIdentifier keyUnit:2];
         }
-        [dict setValue:strUnit forKey:@"unit"];
         
         if ([type.identifier isEqualToString:@"HKQuantityTypeIdentifierHeartRate"] || [type.identifier isEqualToString:@"HKQuantityTypeIdentifierRespiratoryRate"]) {
             doubleValue = [qtyVal doubleValueForUnit:[HKUnit unitFromString:@"count/min"]];
@@ -2114,7 +2126,9 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         }
         else {
             doubleValue = [qtyVal doubleValueForUnit:unit];
+            strUnit = unit.unitString;
         }
+        [dict setValue:strUnit forKey:@"unit"];
         
         if ([type.identifier isEqualToString:@"HKQuantityTypeIdentifierBloodPressureSystolic"] ||
             [type.identifier isEqualToString:@"HKQuantityTypeIdentifierBloodPressureDiastolic"]) {
