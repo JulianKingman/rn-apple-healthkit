@@ -240,24 +240,54 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
     [self mindfulness_saveMindfulSession:input callback:callback];
 }
 
-// Saves all anchors from the previous 
+// Saves all anchors from the previous request
 -(void)dropHealthKitAnchors:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback {
     
-    for (NSString* key in self.anchorsToDrop) {
-        HKQueryAnchor *anchor = self.anchorsToDrop[key];
-        [self saveCustomObject:anchor withKey:[NSString stringWithFormat:@"newAnchor%@",key]];
+    // See if an anchor was specified
+    NSString *anchorKey = [input objectForKey:@"anchorKey"];
+    if (anchorKey == nil) {
+        // Drop all anchors
+        for (NSString* key in self.anchorsToDrop) {
+            HKQueryAnchor *anchor = self.anchorsToDrop[key];
+            [self saveCustomObject:anchor withKey:[NSString stringWithFormat:@"newAnchor%@",key]];
+        }
+        self.anchorsToDrop = [[NSMutableDictionary alloc] init];
+        callback(@[[NSNull null], @true]);
     }
-    callback(@[[NSNull null], @true]);
+    else
+    {
+        // Drop a specific anchor
+        HKQueryAnchor *anchor = self.anchorsToDrop[anchorKey];
+        if (anchor != nil) {
+            [self saveCustomObject:anchor withKey:[NSString stringWithFormat:@"newAnchor%@",anchorKey]];
+            [self.anchorsToDrop removeObjectForKey:anchorKey];
+            callback(@[[NSNull null], @true]);
+        }
+        else {
+            callback(@[[NSNull null], @false]);
+        }
+    }
 }
 
 // Clears all anchors
 -(void)clearHealthKitAnchors:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback
 {
-    for (id key in self.readPermsDict) {
-        HKQuantityType *value = [self.readPermsDict objectForKey:key];
-        
-        [self deleteCustomObjectWithKey:[NSString stringWithFormat:@"newAnchor%@",value.identifier]];
+    // See if an anchor was specified
+    NSString *anchorKey = [input objectForKey:@"anchorKey"];
+    if (anchorKey == nil) {
+        // Clear all anchors
+        for (id key in self.readPermsDict) {
+            HKQuantityType *value = [self.readPermsDict objectForKey:key];
+            
+            [self deleteCustomObjectWithKey:[NSString stringWithFormat:@"newAnchor%@",value.identifier]];
+        }
     }
+    else
+    {
+        // Clear a specific anchor
+        [self deleteCustomObjectWithKey:[NSString stringWithFormat:@"newAnchor%@", anchorKey]];
+    }
+
     callback(@[[NSNull null], @true]);
 }
 
@@ -733,7 +763,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         }
         
         __block NSString *dateString;
-        
+
         NSLog(@"00xxxc10b queryForQuantitySummary() fromDate: %@, toDate: %@", fromDate, toDate);
         
 //        NSDate *enumFromDate = [dateFormatter dateFromString:fromDate];
@@ -825,8 +855,8 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                                            dateString = [dateFormatter stringFromDate:result.startDate];
                                            
                                            NSString *strUUID = [NSString stringWithFormat:@"%@-healthkit2-%@", userid, dateString];
-                                           
                                            [dict setValue:strUUID forKey:@"UUID"];
+
                                            
                                            NSString *strQTYType = [NSString stringWithFormat:@"%@",type.identifier];
                                            [dict setValue:strQTYType forKey:@"quantityType"];
@@ -841,6 +871,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                                            NSLog(@"00xxxc11 %@: %f", result.startDate, valueDouble);
                                        }
                                    }];
+        
         completion(arr, nil);
     };
     
