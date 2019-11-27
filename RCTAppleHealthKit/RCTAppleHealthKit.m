@@ -655,13 +655,13 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         
         NSDictionary *hkReading;
         
-        if ([type.identifier isEqualToString:@"HKQuantityTypeIdentifierStepCount"] )
+        if ([type.identifier isEqualToString:HKQuantityTypeIdentifierStepCount] )
         {
             hkReading = @{ @"h_id" : uuid,
                            @"value" : [hkDict valueForKey:@"value"],
                            @"date" : dateString};
         }
-        else if ([type.identifier isEqualToString:@"HKQuantityTypeIdentifierHeartRate"])
+        else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierHeartRate])
         {
             hkReading = @{ @"h_id" : uuid,
                            @"value" : [hkDict valueForKey:@"value"],
@@ -670,7 +670,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                            @"max_value" : [hkDict valueForKey:@"max_value"]
                            };
         }
-        else if ([type.identifier isEqualToString:@"HKQuantityTypeIdentifierBodyMass"])
+        else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierBodyMass])
         {
             unit = [hkDict valueForKey:@"unit"];
             unit = [unit isEqualToString:@"lb"] ? @"pounds" : unit;
@@ -682,15 +682,15 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                            @"device_name" : [hkDict valueForKey:@"source"]
                            };
         }
-        else if ([type.identifier isEqualToString:@"HKQuantityTypeIdentifierBodyMassIndex"]) {
+        else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierBodyMassIndex]) {
             hkReading = @{ @"h_id" : uuid,
                            @"value" : [hkDict valueForKey:@"value"],
                            @"timestamp" : [hkDict valueForKey:@"startDate"],
                            @"device_name" : [hkDict valueForKey:@"source"]
                            };
         }
-        else if ([type.identifier isEqualToString:@"HKQuantityTypeIdentifierBloodPressureDiastolic"] ||
-                 [type.identifier isEqualToString:@"HKQuantityTypeIdentifierBloodPressureSystolic"] ) {
+        else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierBloodPressureDiastolic] ||
+                 [type.identifier isEqualToString:HKQuantityTypeIdentifierBloodPressureSystolic] ) {
             hkReading = @{ @"h_id" : uuid,
                            @"diastolic" : [hkDict valueForKey:@"value"],
                            @"systolic" : [hkDict valueForKey:@"value2"],
@@ -698,7 +698,16 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                            @"device_name" : [hkDict valueForKey:@"source"]
                            };
         }
-        
+        else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierBloodGlucose] )
+        {
+            hkReading = @{ @"h_id" : uuid,
+                           @"value" : [hkDict valueForKey:@"value"],
+                           @"timestamp" : [hkDict valueForKey:@"startDate"],
+                           @"unit" : [hkDict valueForKey:@"unit"],
+                           @"device_name" : [hkDict valueForKey:@"source"],
+                           @"meal_tag" : [hkDict valueForKey:@"meal_tag"]
+                           };
+        }
         [jsonArray addObject:hkReading];
     }
     
@@ -1032,7 +1041,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         return @"weight";
     }
     else if ([type isEqualToString:HKQuantityTypeIdentifierBloodGlucose]) {
-        return type;
+        return @"blood_glucoses";
     }
     else if ([type isEqualToString:HKQuantityTypeIdentifierNikeFuel]) {//NOT GETTING DATA
         return type;
@@ -1414,7 +1423,10 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierBloodGlucose]) {//DONE
-        [self getOtherQueriesResult:type unit:[HKUnit poundUnit]];
+        //[self getOtherQueriesResult:type unit:[HKUnit poundUnit]];
+        [self getIndividualRecords:type unit:[HKUnit unitFromString: @"mg/dL"] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierNikeFuel]) {//NOT GETTING DATA
         //        [self getOtherQueriesResult:type unit:[HKUnit countUnit]];
@@ -2061,14 +2073,9 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                           
                           // Completion handler called from HKAnchoredObjectQuery
                           if(results) {
-                              // TEMP
-                              if (type.identifier == HKQuantityTypeIdentifierBodyMass) {
-                                  NSLog(@"getIndividualRecords() results.count = %i", results.count);
-                              }
                               
                               NSMutableArray *arrayAdded = [self createReadingsDictionaryFromArray:results type:type unit:unit];
                               NSMutableArray *arrayDeleted = [arrDeleted mutableCopy];
-                              
 
                               // Call the completion handler
                               completion(arrayAdded, arrayDeleted, nil, anchor);
@@ -2146,23 +2153,37 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
             strUnit = [self getDictKeyAndUnit:qtyTypeIdentifier keyUnit:2];
         }
         
-        if ([type.identifier isEqualToString:@"HKQuantityTypeIdentifierHeartRate"] || [type.identifier isEqualToString:@"HKQuantityTypeIdentifierRespiratoryRate"]) {
+        if ([type.identifier isEqualToString:HKQuantityTypeIdentifierHeartRate] || [type.identifier isEqualToString:HKQuantityTypeIdentifierRespiratoryRate]) {
             doubleValue = [qtyVal doubleValueForUnit:[HKUnit unitFromString:@"count/min"]];
         }
-        else if ([type.identifier isEqualToString:@"HKQuantityTypeIdentifierBodyMassIndex"]) {
+        else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierBodyMassIndex]) {
             doubleValue = [qtyVal doubleValueForUnit:[HKUnit unitFromString:@"count"]];
         }
-        else if ([type.identifier isEqualToString:@"HKQuantityTypeIdentifierFlightsClimbed"]) {
+        else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierFlightsClimbed]) {
             doubleValue = [qtyVal doubleValueForUnit:[HKUnit unitFromString:@"count"]];
         }
         else {
+            // TODO: See if this should be derived from HK or specified by HU
+            unit = [HKUnit unitFromString:strUnit];
+//            if ([type.identifier isEqualToString:@"HKQuantityTypeIdentifierBodyMass"] &&
+//                ![strUnit isEqualToString:@"lb"]) {
+//                if ([strUnit isEqualToString:@"kg"]) {
+//                    unit = [HKUnit gramUnitWithMetricPrefix:HKMetricPrefixKilo];
+//                }
+//                else if ([strUnit isEqualToString:@"st"])
+//                {
+//                    unit = HKUnit.stoneUnit;
+//                }
+//            }
             doubleValue = [qtyVal doubleValueForUnit:unit];
-            strUnit = unit.unitString;
+            if ([type.identifier isEqualToString:HKQuantityTypeIdentifierBloodGlucose] && [strUnit hasPrefix:@"mmol"]) {
+                strUnit = @"mmol/L";
+            }
         }
         [dict setValue:strUnit forKey:@"unit"];
         
-        if ([type.identifier isEqualToString:@"HKQuantityTypeIdentifierBloodPressureSystolic"] ||
-            [type.identifier isEqualToString:@"HKQuantityTypeIdentifierBloodPressureDiastolic"]) {
+        if ([type.identifier isEqualToString:HKQuantityTypeIdentifierBloodPressureSystolic] ||
+            [type.identifier isEqualToString:HKQuantityTypeIdentifierBloodPressureDiastolic]) {
             int intValue = (int)floor(doubleValue);
             [dict setValue:[NSString stringWithFormat:@"%i",intValue] forKey:@"value"];
         }
@@ -2174,8 +2195,8 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         // Need to get second value if it's a correlation
         if ([qty isKindOfClass:[HKCorrelation class]]) {
             doubleValue2 = [qtyVal2 doubleValueForUnit:unit];
-            if ([type.identifier isEqualToString:@"HKQuantityTypeIdentifierBloodPressureSystolic"] ||
-                [type.identifier isEqualToString:@"HKQuantityTypeIdentifierBloodPressureDiastolic"]) {
+            if ([type.identifier isEqualToString:HKQuantityTypeIdentifierBloodPressureSystolic] ||
+                [type.identifier isEqualToString:HKQuantityTypeIdentifierBloodPressureDiastolic]) {
                 int intValue = (int)floor(doubleValue2);
                 [dict setValue:[NSString stringWithFormat:@"%i",intValue] forKey:@"value2"];
             }
@@ -2193,6 +2214,25 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         
         NSString *strDevice = [NSString stringWithFormat:@"%@",qty.device];
         [dict setValue:strDevice forKey:@"device"];
+        
+        if ([type.identifier isEqualToString:HKQuantityTypeIdentifierBloodGlucose]) {
+            NSObject * mealTag = [qty.metadata objectForKey:@"HKBloodGlucoseMealTime"];
+            if (mealTag) {
+                NSNumber *mealTagNumber = (NSNumber *)mealTag;
+                if ([mealTagNumber intValue] == 1) {
+                     [dict setValue:@"before" forKey:@"meal_tag"];
+                }
+                else if ([mealTagNumber intValue] == 2) {
+                [dict setValue:@"2hr" forKey:@"meal_tag"];
+                }
+                else {
+                    [dict setValue:@"" forKey:@"meal_tag"];
+                }
+            }
+            else {
+                [dict setValue:@"" forKey:@"meal_tag"];
+            }
+        }
         
         //NSLog(@"dict:%@",dict);
         [arr addObject:dict];
