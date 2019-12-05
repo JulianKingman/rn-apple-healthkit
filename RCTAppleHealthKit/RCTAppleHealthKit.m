@@ -708,6 +708,15 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                            @"meal_tag" : [hkDict valueForKey:@"meal_tag"]
                            };
         }
+        else if ([type.identifier isEqualToString:HKCategoryTypeIdentifierSleepAnalysis])
+        {
+            hkReading = @{ @"h_id" : uuid,
+            @"value" : [hkDict valueForKey:@"value"],
+            @"startDate" : [hkDict valueForKey:@"startDate"],
+            @"endDate" : [hkDict valueForKey:@"endDate"],
+            @"device_name" : [hkDict valueForKey:@"source"],
+            };
+        }
         [jsonArray addObject:hkReading];
     }
     
@@ -1331,7 +1340,10 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         }];
     }
     else if ([str isEqualToString:HKCategoryTypeIdentifierSleepAnalysis]) {//Done
-        [self getCategoryQueriesResult:type unit:[HKUnit kilocalorieUnit]];
+       // [self getCategoryQueriesResult:type unit:[HKUnit kilocalorieUnit]];
+        [self getIndividualRecords:type unit:[HKUnit kilocalorieUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
     }
     else if ([str isEqualToString:HKCharacteristicTypeIdentifierDateOfBirth]) {//DONE
         NSError *error;
@@ -2133,6 +2145,26 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
             NSString *strSampleType = [NSString stringWithFormat:@"%@",correlation.correlationType];
             [dict setValue:strSampleType forKey:@"sampleType"];
         }
+        else if ([qty isKindOfClass:[HKCategorySample class]]) {
+            if ([type.identifier isEqualToString:HKCategoryTypeIdentifierSleepAnalysis]) {
+                HKCategorySample * categorySample = (HKCategorySample *)qty;
+                NSString *strSleepValue;
+                switch (categorySample.value) {
+                    case HKCategoryValueSleepAnalysisInBed:
+                        strSleepValue = @"In Bed";
+                        break;
+                    case HKCategoryValueSleepAnalysisAsleep:
+                        strSleepValue = @"Asleep";
+                        break;
+                    case HKCategoryValueSleepAnalysisAwake:
+                        strSleepValue = @"Awake";
+                        break;
+                    default:
+                        break;
+                }
+                [dict setValue:strSleepValue forKey:@"value"];
+            }
+        }
         else {
             qtyVal = qty.quantity;
             NSString *strQTYType = [NSString stringWithFormat:@"%@",qty.quantityType];
@@ -2141,55 +2173,48 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
             [dict setValue:strSampleType forKey:@"sampleType"];
         }
         
+        // TODO: Test this
         // Derive the unit - mmHg for blood pressure
-        NSString *strQtyValue = [NSString stringWithFormat:@"%@", qtyVal];
-        NSArray *arrSplitValueUnit = [strQtyValue componentsSeparatedByString:@" "];
-        NSString *strUnit = @"";
-        if (arrSplitValueUnit.count >= 2) {
-            strUnit = [arrSplitValueUnit objectAtIndex:1];
-        }
-        else {
-            NSString *qtyTypeIdentifier = [NSString stringWithFormat:@"%@",qty.quantityType];
-            strUnit = [self getDictKeyAndUnit:qtyTypeIdentifier keyUnit:2];
-        }
-        
-        if ([type.identifier isEqualToString:HKQuantityTypeIdentifierHeartRate] || [type.identifier isEqualToString:HKQuantityTypeIdentifierRespiratoryRate]) {
-            doubleValue = [qtyVal doubleValueForUnit:[HKUnit unitFromString:@"count/min"]];
-        }
-        else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierBodyMassIndex]) {
-            doubleValue = [qtyVal doubleValueForUnit:[HKUnit unitFromString:@"count"]];
-        }
-        else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierFlightsClimbed]) {
-            doubleValue = [qtyVal doubleValueForUnit:[HKUnit unitFromString:@"count"]];
-        }
-        else {
-            // TODO: See if this should be derived from HK or specified by HU
-            unit = [HKUnit unitFromString:strUnit];
-//            if ([type.identifier isEqualToString:@"HKQuantityTypeIdentifierBodyMass"] &&
-//                ![strUnit isEqualToString:@"lb"]) {
-//                if ([strUnit isEqualToString:@"kg"]) {
-//                    unit = [HKUnit gramUnitWithMetricPrefix:HKMetricPrefixKilo];
-//                }
-//                else if ([strUnit isEqualToString:@"st"])
-//                {
-//                    unit = HKUnit.stoneUnit;
-//                }
-//            }
-            doubleValue = [qtyVal doubleValueForUnit:unit];
-            if ([type.identifier isEqualToString:HKQuantityTypeIdentifierBloodGlucose] && [strUnit hasPrefix:@"mmol"]) {
-                strUnit = @"mmol/L";
+        if (qtyVal != nil) {
+                    NSString *strQtyValue = [NSString stringWithFormat:@"%@", qtyVal];
+            NSArray *arrSplitValueUnit = [strQtyValue componentsSeparatedByString:@" "];
+            NSString *strUnit = @"";
+            if (arrSplitValueUnit.count >= 2) {
+                strUnit = [arrSplitValueUnit objectAtIndex:1];
             }
-        }
-        [dict setValue:strUnit forKey:@"unit"];
-        
-        if ([type.identifier isEqualToString:HKQuantityTypeIdentifierBloodPressureSystolic] ||
-            [type.identifier isEqualToString:HKQuantityTypeIdentifierBloodPressureDiastolic]) {
-            int intValue = (int)floor(doubleValue);
-            [dict setValue:[NSString stringWithFormat:@"%i",intValue] forKey:@"value"];
-        }
-        else {
-            NSString *strQTY = [NSString stringWithFormat:@"%f",doubleValue];
-            [dict setValue:strQTY forKey:@"value"];
+            else {
+                NSString *qtyTypeIdentifier = [NSString stringWithFormat:@"%@",qty.quantityType];
+                strUnit = [self getDictKeyAndUnit:qtyTypeIdentifier keyUnit:2];
+            }
+            
+            if ([type.identifier isEqualToString:HKQuantityTypeIdentifierHeartRate] || [type.identifier isEqualToString:HKQuantityTypeIdentifierRespiratoryRate]) {
+                doubleValue = [qtyVal doubleValueForUnit:[HKUnit unitFromString:@"count/min"]];
+            }
+            else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierBodyMassIndex]) {
+                doubleValue = [qtyVal doubleValueForUnit:[HKUnit unitFromString:@"count"]];
+            }
+            else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierFlightsClimbed]) {
+                doubleValue = [qtyVal doubleValueForUnit:[HKUnit unitFromString:@"count"]];
+            }
+            else {
+                // TODO: See if this should be derived from HK or specified by HU
+                unit = [HKUnit unitFromString:strUnit];
+                doubleValue = [qtyVal doubleValueForUnit:unit];
+                if ([type.identifier isEqualToString:HKQuantityTypeIdentifierBloodGlucose] && [strUnit hasPrefix:@"mmol"]) {
+                    strUnit = @"mmol/L";
+                }
+            }
+            [dict setValue:strUnit forKey:@"unit"];
+            
+            if ([type.identifier isEqualToString:HKQuantityTypeIdentifierBloodPressureSystolic] ||
+                [type.identifier isEqualToString:HKQuantityTypeIdentifierBloodPressureDiastolic]) {
+                int intValue = (int)floor(doubleValue);
+                [dict setValue:[NSString stringWithFormat:@"%i",intValue] forKey:@"value"];
+            }
+            else {
+                NSString *strQTY = [NSString stringWithFormat:@"%f",doubleValue];
+                [dict setValue:strQTY forKey:@"value"];
+            }
         }
         
         // Need to get second value if it's a correlation
