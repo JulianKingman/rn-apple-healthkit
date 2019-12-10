@@ -700,13 +700,24 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         }
         else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierBloodGlucose] )
         {
-            hkReading = @{ @"h_id" : uuid,
-                           @"value" : [hkDict valueForKey:@"value"],
-                           @"timestamp" : [hkDict valueForKey:@"startDate"],
-                           @"unit" : [hkDict valueForKey:@"unit"],
-                           @"device_name" : [hkDict valueForKey:@"source"],
-                           @"meal_tag" : [hkDict valueForKey:@"meal_tag"]
-                           };
+            if ([((NSString *)[hkDict valueForKey:@"meal_tag"]) length] == 0) {
+                hkReading = @{ @"h_id" : uuid,
+                               @"value" : [hkDict valueForKey:@"value"],
+                               @"timestamp" : [hkDict valueForKey:@"startDate"],
+                               @"unit" : [hkDict valueForKey:@"unit"],
+                               @"device_name" : [hkDict valueForKey:@"source"]
+                               };
+            }
+            else {
+                hkReading = @{ @"h_id" : uuid,
+                               @"value" : [hkDict valueForKey:@"value"],
+                               @"timestamp" : [hkDict valueForKey:@"startDate"],
+                               @"unit" : [hkDict valueForKey:@"unit"],
+                               @"device_name" : [hkDict valueForKey:@"source"],
+                               @"meal_tag" : [hkDict valueForKey:@"meal_tag"]
+                               };
+            }
+
         }
         else if ([type.identifier isEqualToString:HKCategoryTypeIdentifierSleepAnalysis])
         {
