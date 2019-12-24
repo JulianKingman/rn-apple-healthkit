@@ -307,31 +307,17 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
     if ([HKHealthStore isHealthDataAvailable]) {
         NSSet *writeDataTypes;
         NSSet *readDataTypes;
-        NSSet *readPermams;
-        // get permissions from input object provided by JS options argument
-        NSDictionary* permissions =[input objectForKey:@"permissions"];
-        if(permissions != nil){
-            NSArray* readPermsArray = [permissions objectForKey:@"read"];
-            NSArray* writePermsArray = [permissions objectForKey:@"write"];
-            NSSet* readPerms = [self getReadPermsFromOptions:readPermsArray];
-            readPermams = [self getReadPermsFromOptions:readPermsArray];
-            NSSet* writePerms = [self getWritePermsFromOptions:writePermsArray];
-            
-            if(readPerms != nil) {
-                readDataTypes = readPerms;
-            }
-            if(writePerms != nil) {
-                writeDataTypes = writePerms;
-            }
-        } else {
-            callback(@[RCTMakeError(@"permissions must be provided in the initialization options", nil, nil)]);
-            return;
-        }
+        // No longer get permissions from input object provided by JS options argument
+        // Pick them up from the allowable permissions in RCTAppleHealthKit+TypesAndPermissions
+//        NSDictionary* permissions =[input objectForKey:@"permissions"];
+        NSSet* readPerms = [self getReadPerms];
+        NSSet* writePerms = [self getWritePerms];
         
-        // make sure at least 1 read or write permission is provided
-        if(!writeDataTypes && !readDataTypes){
-            callback(@[RCTMakeError(@"at least 1 read or write permission must be set in options.permissions", nil, nil)]);
-            return;
+        if(readPerms != nil) {
+            readDataTypes = readPerms;
+        }
+        if(writePerms != nil) {
+            writeDataTypes = writePerms;
         }
         
         [self.healthStore requestAuthorizationToShareTypes:writeDataTypes readTypes:readDataTypes completion:^(BOOL success, NSError *error) {
@@ -413,10 +399,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
     }
     
     NSString *userid = [input objectForKey:@"userid"];
-    NSArray *readPermsArray = [input objectForKey:@"permissions"];
-    
-    
-    NSSet* types = [self getReadPermsFromOptions:readPermsArray];
+    NSSet* types = [self getReadPerms];
     self.jsonObject = [[NSMutableDictionary alloc] init];
     self.jsonDeletedObject = [[NSMutableDictionary alloc] init];
     self.anchorsToDrop = [[NSMutableDictionary alloc] init];
@@ -453,7 +436,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
             [self queryForUpdates:key predicate:predicate completion:^(NSArray * allObjects, NSArray * deletedObjects, NSError * error, HKQueryAnchor *anchor) {
                 
                 NSDateComponents *interval = [[NSDateComponents alloc] init];
-                
+                                
                 if(([key.identifier isEqualToString:HKQuantityTypeIdentifierHeartRate] ||
                    [key.identifier isEqualToString:HKQuantityTypeIdentifierStepCount]) &&
                    allObjects.count > 0) {
@@ -728,6 +711,26 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
             @"device_name" : [hkDict valueForKey:@"source"],
             };
         }
+        else if ([type.identifier isEqualToString:HKCategoryTypeIdentifierMindfulSession]) {
+            hkReading = @{ @"h_id" : uuid,
+            @"timestamp" : [hkDict valueForKey:@"startDate"],
+            @"unit" : @"min",
+            @"device_name" : [hkDict valueForKey:@"source"],
+            @"minutes" : [hkDict valueForKey:@"minutes"],
+            };
+        }
+        else if (@available(iOS 11.0, *)) {
+            if ([type.identifier isEqualToString:HKQuantityTypeIdentifierHeartRateVariabilitySDNN])
+            {
+                hkReading = @{ @"h_id" : uuid,
+                @"value" : [hkDict valueForKey:@"value"],
+                @"startDate" : [hkDict valueForKey:@"startDate"],
+                @"endDate" : [hkDict valueForKey:@"endDate"],
+                @"unit" : [hkDict valueForKey:@"unit"],
+                @"device_name" : [hkDict valueForKey:@"source"],
+                };
+            }
+        }
         [jsonArray addObject:hkReading];
     }
     
@@ -909,171 +912,190 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
 
 -(NSString *)getHeadsUpTypeFromHealthKitType:(NSString *)type
 {
-    if ([type isEqualToString:HKQuantityTypeIdentifierDietaryFatMonounsaturated]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryFatPolyunsaturated]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryFatSaturated]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryFatTotal]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryFiber]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryFolate]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryIodine]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryIron]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryMagnesium]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryManganese]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryMolybdenum]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryNiacin]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryPantothenicAcid]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryPhosphorus]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryPotassium]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryProtein]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryRiboflavin]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierDietarySelenium]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierDietarySodium]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierDietarySugar]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryThiamin]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryVitaminA]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryVitaminB12]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryVitaminB6]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryVitaminC]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryVitaminD]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryVitaminE]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryVitaminK]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryZinc]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryWater]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierHeartRate]) {//Earlier
-        return @"heart_rate";
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierLeanBodyMass]) {
-        return @"lbs";
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierBloodPressureDiastolic] ||
+    if ([type isEqualToString:HKQuantityTypeIdentifierBloodPressureDiastolic] ||
              [type isEqualToString:HKQuantityTypeIdentifierBloodPressureSystolic]) {
-        return @"blood_pressure";
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierBodyMassIndex]) {
-        return @"bmi";
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierBodyFatPercentage]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierBodyTemperature]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierRespiratoryRate]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierDistanceCycling]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierStepCount]) {
-        return @"steps";
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierActiveEnergyBurned]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierBasalEnergyBurned]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierDistanceWalkingRunning]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierFlightsClimbed]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKCategoryTypeIdentifierSleepAnalysis]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKCharacteristicTypeIdentifierDateOfBirth]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKCharacteristicTypeIdentifierBiologicalSex]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKCharacteristicTypeIdentifierBloodType]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKCharacteristicTypeIdentifierWheelchairUse]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierHeight]) {
-        return type;
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierBodyMass]) {
-        return @"weight";
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierBloodGlucose]) {
-        return @"blood_glucoses";
-    }
-    else if ([type isEqualToString:HKQuantityTypeIdentifierNikeFuel]) {//NOT GETTING DATA
-        return type;
-    }
-    else if ([type isEqualToString:HKCategoryTypeIdentifierMindfulSession]) {//NOT GETTING DATA
-        return type;
+        return @"HKQuantityTypeIdentifierBloodPressure";
     }
     else {
         return type;
     }
-    return nil;
 }
+
+//-(NSString *)getHeadsUpTypeFromHealthKitType:(NSString *)type
+//{
+//    if ([type isEqualToString:HKQuantityTypeIdentifierDietaryFatMonounsaturated]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryFatPolyunsaturated]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryFatSaturated]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryFatTotal]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryFiber]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryFolate]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryIodine]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryIron]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryMagnesium]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryManganese]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryMolybdenum]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryNiacin]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryPantothenicAcid]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryPhosphorus]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryPotassium]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryProtein]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryRiboflavin]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietarySelenium]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietarySodium]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietarySugar]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryThiamin]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryVitaminA]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryVitaminB12]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryVitaminB6]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryVitaminC]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryVitaminD]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryVitaminE]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryVitaminK]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryZinc]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryWater]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierHeartRate]) {//Earlier
+//        return @"heart_rate";
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierLeanBodyMass]) {
+//        return @"lbs";
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierBloodPressureDiastolic] ||
+//             [type isEqualToString:HKQuantityTypeIdentifierBloodPressureSystolic]) {
+//        return @"blood_pressure";
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierBodyMassIndex]) {
+//        return @"bmi";
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierBodyFatPercentage]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierBodyTemperature]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierRespiratoryRate]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierDistanceCycling]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierStepCount]) {
+//        return @"steps";
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierActiveEnergyBurned]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierBasalEnergyBurned]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierDistanceWalkingRunning]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierFlightsClimbed]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKCategoryTypeIdentifierSleepAnalysis]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKCharacteristicTypeIdentifierDateOfBirth]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKCharacteristicTypeIdentifierBiologicalSex]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKCharacteristicTypeIdentifierBloodType]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKCharacteristicTypeIdentifierWheelchairUse]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierHeight]) {
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierBodyMass]) {
+//        return @"weight";
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierBloodGlucose]) {
+//        return @"blood_glucoses";
+//    }
+//    else if ([type isEqualToString:HKQuantityTypeIdentifierNikeFuel]) {//NOT GETTING DATA
+//        return type;
+//    }
+//    else if ([type isEqualToString:HKCategoryTypeIdentifierMindfulSession]) {//NOT GETTING DATA
+//        return type;
+//    }
+//    else if (@available(iOS 11.0, *)) {
+//        if ([type isEqualToString:HKQuantityTypeIdentifierHeartRateVariabilitySDNN]) {
+//            return @"hrv";
+//        }
+//        else {
+//            return type;
+//        }
+//    }
+//    else {
+//        return type;
+//    }
+//    return nil;
+//}
 
 //Akshay
 -(void)setUpBackgroundDeliveryForDataTypes :(NSSet*) types {
@@ -1455,7 +1477,19 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         //        [self getOtherQueriesResult:type unit:[HKUnit countUnit]];
     }
     else if ([str isEqualToString:HKCategoryTypeIdentifierMindfulSession]) {//NOT GETTING DATA
-        //        [self getCategoryQueriesResult:type unit:[HKUnit poundUnit]];
+        [self getIndividualRecords:type unit:[HKUnit countUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if (@available(iOS 11.0, *)) {
+        if ([str isEqualToString:HKQuantityTypeIdentifierHeartRateVariabilitySDNN]) {
+        [self getIndividualRecords:type unit:[HKUnit countUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+        }
+        else {
+            NSLog(@"%@",str);
+        }
     }
     else {
         NSLog(@"%@",str);
@@ -2268,6 +2302,12 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
             else {
                 [dict setValue:@"" forKey:@"meal_tag"];
             }
+        }
+        else if ([type.identifier isEqualToString:HKCategoryTypeIdentifierMindfulSession]) {
+            NSTimeInterval sessionSeconds = [endDate timeIntervalSinceDate:startDate];
+            NSInteger sessionMinutes = sessionSeconds / 60;
+            NSString *stringMinutes = [NSString stringWithFormat: @"%ld", (long)sessionMinutes];
+            [dict setValue:stringMinutes forKey:@"minutes"];
         }
         
         //NSLog(@"dict:%@",dict);
