@@ -438,12 +438,14 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                 NSDateComponents *interval = [[NSDateComponents alloc] init];
                                 
                 if(([key.identifier isEqualToString:HKQuantityTypeIdentifierHeartRate] ||
-                   [key.identifier isEqualToString:HKQuantityTypeIdentifierStepCount]) &&
+                   [key.identifier isEqualToString:HKQuantityTypeIdentifierStepCount] ||
+                    [key.identifier isEqualToString:HKQuantityTypeIdentifierActiveEnergyBurned]) &&
                    allObjects.count > 0) {
                     
                     HKStatisticsOptions options;
                     
-                    if ([key.identifier isEqualToString:HKQuantityTypeIdentifierStepCount]) {
+                    if ([key.identifier isEqualToString:HKQuantityTypeIdentifierStepCount] ||
+                        [key.identifier isEqualToString:HKQuantityTypeIdentifierActiveEnergyBurned]) {
                         options = HKStatisticsOptionCumulativeSum;
                         interval.day = 1;  // steps
                     }
@@ -498,6 +500,666 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         }
     }
 }
+
+-(void)queryForUpdates:(HKQuantityType *)type
+             predicate:(NSPredicate *)predicate
+            completion:(void (^)(NSArray *,NSArray *, NSError *, HKQueryAnchor *anchor))completion
+{
+    NSString *str = type.identifier;
+    
+    NSLog(@"00xxxc7. queryForUpdates() type.identifier = %@", str);
+    
+    if ([str isEqualToString:HKQuantityTypeIdentifierDietaryFatMonounsaturated]) {
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryFatPolyunsaturated]) {
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+            
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryFatSaturated]) {
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryFatTotal]) {
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryEnergyConsumed]) {
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryFiber]) {
+        [self getIndividualRecords:type unit:[HKUnit kilocalorieUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryFolate]) {
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryIodine]) {
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryIron]) {
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryMagnesium]) {
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryManganese]) {
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryMolybdenum]) {
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryNiacin]) {
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryPantothenicAcid]) {
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryPhosphorus]) {
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryPotassium]) {
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryProtein]) {
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryCarbohydrates]) {
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryRiboflavin]) {
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierDietarySelenium]) {
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierDietarySodium]) {
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierDietarySugar]) {
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryThiamin]) {
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryVitaminA]) {
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryVitaminB12]) {
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryVitaminB6]) {
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryVitaminC]) {
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryVitaminD]) {
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryVitaminE]) {
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryVitaminK]) {
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryZinc]) {
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryWater]) {
+        [self getIndividualRecords:type unit:[HKUnit literUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierHeartRate]) {//DONE EARLIER
+        [self getIndividualRecords:type unit:[HKUnit countUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierLeanBodyMass]) {//DONE
+        [self getIndividualRecords:type unit:[HKUnit poundUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierBloodPressureDiastolic] ||
+             [str isEqualToString:HKQuantityTypeIdentifierBloodPressureSystolic]) {//DONE
+        [self getIndividualRecords:type unit:[HKUnit millimeterOfMercuryUnit]
+                         predicate:predicate
+                        completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+                            completion(results, arrDeleted, error, anchor);
+                        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierBodyMassIndex]) {//DONE
+        [self getIndividualRecords:type unit:[HKUnit mileUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierBodyFatPercentage]) {//DONE
+        [self getIndividualRecords:type unit:[HKUnit percentUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierRespiratoryRate]) {//DONE
+        [self getIndividualRecords:type unit:[HKUnit countUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierDistanceCycling]) {//DONE
+        [self getIndividualRecords:type unit:[HKUnit mileUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierStepCount]) {//DONE
+        [self getIndividualRecords:type unit:[HKUnit countUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierActiveEnergyBurned]) {//DONE
+        [self getIndividualRecords:type unit:[HKUnit kilocalorieUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierBasalBodyTemperature]) {
+        [self getIndividualRecords:type unit:[HKUnit degreeFahrenheitUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierBasalEnergyBurned]) {//DONE
+        [self getIndividualRecords:type unit:[HKUnit kilocalorieUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierDistanceWalkingRunning]) {//DONE
+        [self getIndividualRecords:type unit:[HKUnit mileUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierFlightsClimbed]) {//DONE
+        [self getIndividualRecords:type unit:[HKUnit kilocalorieUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKCategoryTypeIdentifierSleepAnalysis]) {//Done
+       // [self getCategoryQueriesResult:type unit:[HKUnit kilocalorieUnit]];
+        [self getIndividualRecords:type unit:[HKUnit kilocalorieUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKCharacteristicTypeIdentifierDateOfBirth]) {//DONE
+        NSError *error;
+        NSDate *dateOfBirth = [self.healthStore dateOfBirthWithError:&error];
+        NSDateFormatter *df = [[NSDateFormatter alloc] init];
+        df.dateFormat = @"dd-MM-yyyy";
+        NSString *strDate = [df stringFromDate:dateOfBirth];
+        [self convertCharacteristicsData:type.identifier values:strDate];
+    }
+    else if ([str isEqualToString:HKCharacteristicTypeIdentifierBiologicalSex]) {//DONE
+        NSError *error;
+        HKBiologicalSexObject *gen=[self.healthStore biologicalSexWithError:&error];
+        NSString *strGender=@"";
+        if (gen.biologicalSex==HKBiologicalSexMale) {
+            strGender=@"Male";
+        }
+        else if (gen.biologicalSex==HKBiologicalSexFemale) {
+            strGender=@"Female";
+        }
+        else if (gen.biologicalSex==HKBiologicalSexOther) {
+            strGender=@"Other";
+        }
+        else {
+            strGender=@"Not Set";
+        }
+        [self convertCharacteristicsData:type.identifier values:strGender];
+    }
+    else if ([str isEqualToString:HKCharacteristicTypeIdentifierBloodType]) {//DONE
+        NSError *error;
+        NSString *bloodGroup =@"";
+        HKBloodTypeObject *bloodType = [self.healthStore bloodTypeWithError:&error];
+        switch (bloodType.bloodType) {
+            case HKBloodTypeNotSet:
+                bloodGroup = @"Not Set";
+                break;
+            case HKBloodTypeAPositive:
+                bloodGroup = @"A+";
+                break;
+            case HKBloodTypeANegative:
+                bloodGroup = @"A-";
+                break;
+            case HKBloodTypeBPositive:
+                bloodGroup = @"B+";
+                break;
+            case HKBloodTypeBNegative:
+                bloodGroup = @"B-";
+                break;
+            case HKBloodTypeABPositive:
+                bloodGroup = @"AB+";
+                break;
+            case HKBloodTypeABNegative:
+                bloodGroup = @"AB-";
+                break;
+            case HKBloodTypeOPositive:
+                bloodGroup = @"O+";
+                break;
+            case HKBloodTypeONegative:
+                bloodGroup = @"O-";
+                break;
+        }
+        [self convertCharacteristicsData:type.identifier values:bloodGroup];
+    }
+    else if ([str isEqualToString:HKCharacteristicTypeIdentifierWheelchairUse]) {//DONE
+        NSError *error;
+        HKWheelchairUseObject *wheelChair = [self.healthStore wheelchairUseWithError:&error];
+        NSString *wheelChairUse = @"";
+        switch (wheelChair.wheelchairUse) {
+            case HKWheelchairUseNotSet:
+                wheelChairUse = @"Not Set";
+                break;
+            case HKWheelchairUseNo:
+                wheelChairUse = @"No";
+                break;
+            case HKWheelchairUseYes:
+                wheelChairUse = @"Yes";
+                break;
+            default:
+                break;
+        }
+        [self convertCharacteristicsData:type.identifier values:wheelChairUse];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierHeight]) {//DONE
+        [self getOtherQueriesResult:type unit:[HKUnit footUnit]];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierBodyMass]) {//DONE
+        //[self getOtherQueriesResult:type unit:[HKUnit poundUnit]];
+        [self getIndividualRecords:type unit:[HKUnit poundUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierBloodGlucose]) {//DONE
+        //[self getOtherQueriesResult:type unit:[HKUnit poundUnit]];
+        [self getIndividualRecords:type unit:[HKUnit unitFromString: @"mg/dL"] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierNikeFuel]) {
+        //        [self getOtherQueriesResult:type unit:[HKUnit countUnit]];
+    }
+    else if ([str isEqualToString:HKCategoryTypeIdentifierMindfulSession]) {
+        [self getIndividualRecords:type unit:[HKUnit unitFromString: @"%/min"] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierOxygenSaturation]) {
+        [self getIndividualRecords:type unit:[HKUnit countUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
+    else if (@available(iOS 11.0, *)) {
+        if ([str isEqualToString:HKQuantityTypeIdentifierHeartRateVariabilitySDNN]) {
+            [self getIndividualRecords:type unit:[HKUnit countUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+                completion(results, arrDeleted, error, anchor);
+            }];
+        }
+        else if ([str isEqualToString:HKQuantityTypeIdentifierWaistCircumference]) {
+            [self getIndividualRecords:type unit:[HKUnit inchUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+                completion(results, arrDeleted, error, anchor);
+            }];
+        }
+        else if ([str isEqualToString:HKQuantityTypeIdentifierRestingHeartRate]) {
+            [self getIndividualRecords:type unit:[HKUnit countUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+                completion(results, arrDeleted, error, anchor);
+            }];
+        }
+        // mL/min·kg
+        else if ([str isEqualToString:HKQuantityTypeIdentifierVO2Max]) {
+            [self getIndividualRecords:type unit:[HKUnit unitFromString: @"mL/min·kg"]  predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+                completion(results, arrDeleted, error, anchor);
+            }];
+        }
+        else {
+            NSLog(@"%@",str);
+        }
+    }
+    else {
+        NSLog(@"%@",str);
+    }
+}
+
+#pragma mark GET Individual Records
+-(void)getIndividualRecords : (HKQuantityType *)type
+                        unit:(HKUnit *)unit
+                   predicate:(NSPredicate *)predicate
+                  completion:(void (^)(NSMutableArray *,NSMutableArray *, NSError *, HKQueryAnchor *))completion
+{
+    NSUInteger limit = HKObjectQueryNoLimit;
+    BOOL ascending = false;
+    
+    [self fetchIndividualRecords:type
+                            unit:unit
+                       predicate:predicate
+                       ascending:ascending
+                           limit:limit
+                      completion:^(NSArray *results, NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+                          
+                          // Completion handler called from HKAnchoredObjectQuery
+                          if(results) {
+                              
+                              NSMutableArray *arrayAdded = [self createReadingsDictionaryFromArray:results type:type unit:unit];
+                              NSMutableArray *arrayDeleted = [arrDeleted mutableCopy];
+
+                              // Call the completion handler
+                              completion(arrayAdded, arrayDeleted, nil, anchor);
+                          }
+                          else {
+                              NSLog(@"Error fetching samples from HealthKit: %@", error);
+                              completion(nil, nil, error, anchor);
+                          }
+                      }];
+}
+
+-(void)fetchIndividualRecords :(HKQuantityType *)type unit:(HKUnit *)unit predicate:(NSPredicate *)predicate ascending:(BOOL)asc limit:(NSUInteger)lim completion:(void (^)(NSArray *,NSArray *, NSError *, HKQueryAnchor *))completion {
+    
+    HKQueryAnchor *newAnchor = nil;
+    
+    // Check for an existing anchor object for this type IF no predicate w/ start/end dates has been passed
+    // If no anchor exists, newAnchor == nil, which retrieves all records for the type
+    if (predicate == nil && [[NSUserDefaults standardUserDefaults]valueForKey:[NSString stringWithFormat:@"newAnchor%@",type.identifier]] != nil) {
+
+        // Anchor exists, use it
+        newAnchor = [self loadCustomObjectWithKey:[NSString stringWithFormat:@"newAnchor%@",type.identifier]];
+    }
+    
+    if (newAnchor) {
+        NSLog(@"00xxxc8 fetchIndividualRecords() newAnchor is NOT nil");
+    }
+    else {
+        NSLog(@"00xxxc8 fetchIndividualRecords() newAnchor is nil");
+    }
+    
+    HKSampleType *sampleType = type;
+    // If Diastolic or Systolic blood pressure, convert to Blood Pressure correlation type
+    if ([type.identifier isEqualToString:HKQuantityTypeIdentifierBloodPressureDiastolic] ||
+        [type.identifier isEqualToString:HKQuantityTypeIdentifierBloodPressureSystolic]) {
+        sampleType = [HKCorrelationType correlationTypeForIdentifier:HKCorrelationTypeIdentifierBloodPressure];
+    }
+    
+    // Create the anchored object query
+    HKAnchoredObjectQuery *query =
+        [[HKAnchoredObjectQuery alloc]initWithType:sampleType
+                                         predicate:predicate
+                                            anchor:newAnchor
+                                             limit:HKObjectQueryNoLimit
+                                    resultsHandler:^(HKAnchoredObjectQuery * _Nonnull query,
+                                                     NSArray<__kindof HKSample *> * _Nullable sampleObjects,
+                                                     NSArray<HKDeletedObject *> * _Nullable deletedObjects,
+                                                     HKQueryAnchor * _Nullable newAnchor,
+                                                     NSError * _Nullable error) {
+                                                                   
+            NSLog(@"00xxxc10 HKAnchoredObjectQuery resultsHandler() Type:%@ sampleObjects.count:%lu deletedObjects.count:%lu",
+                  type.identifier,
+                  (unsigned long)sampleObjects.count,
+                  (unsigned long)deletedObjects.count);
+        
+            NSMutableArray *arrUUID = [[NSMutableArray alloc]init];
+        
+            for (HKDeletedObject *objdelete in deletedObjects) {
+                NSString *strUUID = [NSString stringWithFormat:@"%@",objdelete.UUID];
+                [arrUUID addObject:strUUID];
+            }
+
+            // If start/end dates have been passed, don't return an anchor
+            if (predicate != nil) {
+                newAnchor = nil;
+            }
+            completion(sampleObjects, arrUUID, error, newAnchor);
+        }];
+    
+    NSLog(@"00xxxc9 fetchIndividualRecords() execute query");
+    
+    [self.healthStore executeQuery:query];
+    
+}
+
+-(NSMutableArray *)createReadingsDictionaryFromArray:(NSArray *)results type:(HKQuantityType *)type unit:(HKUnit *)unit
+{
+    // Create an array of dictionary objects from the query results
+    NSMutableArray *arr = [[NSMutableArray alloc] init];
+    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+    [dateFormatter setDateFormat:@"yyyy-MM-dd'T'HH:mm"];
+    HKQuantityType *systolicType = [HKQuantityType quantityTypeForIdentifier:HKQuantityTypeIdentifierBloodPressureSystolic];
+    HKQuantityType *diastolicType = [HKQuantityType quantityTypeForIdentifier:HKQuantityTypeIdentifierBloodPressureDiastolic];
+    
+    for (int i=0; i<results.count; i++) {
+        HKQuantitySample *qty = [results objectAtIndex:i];
+        
+        NSDate *startDate = qty.startDate;
+        NSDate *endDate = qty.endDate;
+        
+        NSTimeInterval startTimeStamp  = [startDate timeIntervalSince1970];
+        NSTimeInterval endTimeStamp  = [endDate timeIntervalSince1970];
+        NSString *startTime = [NSString stringWithFormat:@"%f",startTimeStamp];
+        NSString *endTime = [NSString stringWithFormat:@"%f",endTimeStamp];
+        
+        NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+        [dict setValue:startTime forKey:@"startTimestamp"];
+        [dict setValue:endTime forKey:@"endTimestamp"];
+        [dict setValue:[dateFormatter stringFromDate:startDate] forKey:@"startDate"];
+        [dict setValue:[dateFormatter stringFromDate:endDate] forKey:@"endDate"];
+        HKQuantity *qtyVal;
+        HKQuantity *qtyVal2;
+        double doubleValue = 0.0;
+        double doubleValue2 = 0.0;
+        
+        // Check if it's an HKCorrelation
+        if ([qty isKindOfClass:[HKCorrelation class]]) {
+            HKCorrelation *correlation = (HKCorrelation *)qty;
+            
+            if ([type.identifier isEqualToString:@"HKQuantityTypeIdentifierBloodPressureSystolic"] ||
+                [type.identifier isEqualToString:@"HKQuantityTypeIdentifierBloodPressureDiastolic"]) {
+                HKQuantitySample *bloodPressureSystolicValue = [correlation objectsForType:systolicType].anyObject;
+                HKQuantitySample *bloodPressureDiastolicValue = [correlation objectsForType:diastolicType].anyObject;
+                qtyVal = bloodPressureDiastolicValue.quantity;
+                qtyVal2 = bloodPressureSystolicValue.quantity;
+            }
+            NSString *strQTYType = [NSString stringWithFormat:@"%@", correlation.correlationType];
+            [dict setValue:strQTYType forKey:@"quantityType"];
+            NSString *strSampleType = [NSString stringWithFormat:@"%@",correlation.correlationType];
+            [dict setValue:strSampleType forKey:@"sampleType"];
+        }
+        else if ([qty isKindOfClass:[HKCategorySample class]]) {
+            if ([type.identifier isEqualToString:HKCategoryTypeIdentifierSleepAnalysis]) {
+                HKCategorySample * categorySample = (HKCategorySample *)qty;
+                NSString *strSleepValue;
+                switch (categorySample.value) {
+                    case HKCategoryValueSleepAnalysisInBed:
+                        strSleepValue = @"In Bed";
+                        break;
+                    case HKCategoryValueSleepAnalysisAsleep:
+                        strSleepValue = @"Asleep";
+                        break;
+                    case HKCategoryValueSleepAnalysisAwake:
+                        strSleepValue = @"Awake";
+                        break;
+                    default:
+                        break;
+                }
+                [dict setValue:strSleepValue forKey:@"value"];
+            }
+        }
+        else {
+            qtyVal = qty.quantity;
+            NSString *strQTYType = [NSString stringWithFormat:@"%@",qty.quantityType];
+            [dict setValue:strQTYType forKey:@"quantityType"];
+            NSString *strSampleType = [NSString stringWithFormat:@"%@",qty.quantityType];
+            [dict setValue:strSampleType forKey:@"sampleType"];
+        }
+        
+        // TODO: Test this
+        // Derive the unit - mmHg for blood pressure
+        if (qtyVal != nil) {
+                    NSString *strQtyValue = [NSString stringWithFormat:@"%@", qtyVal];
+            NSArray *arrSplitValueUnit = [strQtyValue componentsSeparatedByString:@" "];
+            NSString *strUnit = @"";
+            if (arrSplitValueUnit.count >= 2) {
+                strUnit = [arrSplitValueUnit objectAtIndex:1];
+            }
+            else {
+                NSString *qtyTypeIdentifier = [NSString stringWithFormat:@"%@",qty.quantityType];
+                strUnit = [self getDictKeyAndUnit:qtyTypeIdentifier keyUnit:2];
+            }
+            
+            
+//            if ([type.identifier isEqualToString:HKQuantityTypeIdentifierHeartRate] || [type.identifier isEqualToString:HKQuantityTypeIdentifierRespiratoryRate]) {
+//             if ([strUnit isEqualToString:@"count/min"]) {
+//                 doubleValue = [qtyVal doubleValueForUnit:[HKUnit unitFromString:@"count/min"]];
+//            }
+//            else
+            if ([type.identifier isEqualToString:HKQuantityTypeIdentifierBodyMassIndex]) {
+                doubleValue = [qtyVal doubleValueForUnit:[HKUnit unitFromString:@"count"]];
+            }
+            else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierFlightsClimbed]) {
+                doubleValue = [qtyVal doubleValueForUnit:[HKUnit unitFromString:@"count"]];
+            }
+            else {
+                // TODO: See if this should be derived from HK or specified by HU
+                unit = [HKUnit unitFromString:strUnit];
+                doubleValue = [qtyVal doubleValueForUnit:unit];
+                if ([type.identifier isEqualToString:HKQuantityTypeIdentifierBloodGlucose] && [strUnit hasPrefix:@"mmol"]) {
+                    strUnit = @"mmol/L";
+                }
+            }
+            [dict setValue:strUnit forKey:@"unit"];
+            
+            if ([type.identifier isEqualToString:HKQuantityTypeIdentifierBloodPressureSystolic] ||
+                [type.identifier isEqualToString:HKQuantityTypeIdentifierBloodPressureDiastolic]) {
+                int intValue = (int)floor(doubleValue);
+                [dict setValue:[NSString stringWithFormat:@"%i",intValue] forKey:@"value"];
+            }
+            else {
+                NSString *strQTY = [NSString stringWithFormat:@"%f",doubleValue];
+                [dict setValue:strQTY forKey:@"value"];
+            }
+        }
+        
+        // Need to get second value if it's a correlation
+        if ([qty isKindOfClass:[HKCorrelation class]]) {
+            doubleValue2 = [qtyVal2 doubleValueForUnit:unit];
+            if ([type.identifier isEqualToString:HKQuantityTypeIdentifierBloodPressureSystolic] ||
+                [type.identifier isEqualToString:HKQuantityTypeIdentifierBloodPressureDiastolic]) {
+                int intValue = (int)floor(doubleValue2);
+                [dict setValue:[NSString stringWithFormat:@"%i",intValue] forKey:@"value2"];
+            }
+            else {
+                NSString *strQTY2 = [NSString stringWithFormat:@"%f",doubleValue2];
+                [dict setValue:strQTY2 forKey:@"value2"];
+            }
+        }
+        
+        NSString *strSourceName = qty.sourceRevision.source.name;
+        [dict setValue:strSourceName forKey:@"source"];
+        
+        NSString *strUUID = [NSString stringWithFormat:@"%@",qty.UUID];
+        [dict setValue:strUUID forKey:@"UUID"];
+       
+        NSString *strDevice;
+        if (qty.device == nil) {
+            strDevice = @"";
+        }
+        else {
+            strDevice = [NSString stringWithFormat:@"%@",qty.device];
+        }
+
+        [dict setValue:strDevice forKey:@"device"];
+        
+        if ([type.identifier isEqualToString:HKQuantityTypeIdentifierBloodGlucose]) {
+            NSObject * mealTag = [qty.metadata objectForKey:@"HKBloodGlucoseMealTime"];
+            if (mealTag) {
+                NSNumber *mealTagNumber = (NSNumber *)mealTag;
+                if ([mealTagNumber intValue] == 1) {
+                     [dict setValue:@"before" forKey:@"meal_tag"];
+                }
+                else if ([mealTagNumber intValue] == 2) {
+                [dict setValue:@"2hr" forKey:@"meal_tag"];
+                }
+                else {
+                    [dict setValue:@"" forKey:@"meal_tag"];
+                }
+            }
+            else {
+                [dict setValue:@"" forKey:@"meal_tag"];
+            }
+        }
+        else if ([type.identifier isEqualToString:HKCategoryTypeIdentifierMindfulSession]) {
+            NSTimeInterval sessionSeconds = [endDate timeIntervalSinceDate:startDate];
+            NSInteger sessionMinutes = sessionSeconds / 60;
+            NSString *stringMinutes = [NSString stringWithFormat: @"%ld", (long)sessionMinutes];
+            [dict setValue:stringMinutes forKey:@"minutes"];
+        }
+        
+        //NSLog(@"dict:%@",dict);
+        [arr addObject:dict];
+    }
+    return arr;
+}
+
 
 // Add the results returned from HealthKit for a specific reading type to the jsonObject
 // If finished, call back to JS
@@ -653,6 +1315,15 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                            @"max_value" : [hkDict valueForKey:@"max_value"]
                            };
         }
+        else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierActiveEnergyBurned])
+        {
+            hkReading = @{ @"h_id" : uuid,
+            @"value" : [hkDict valueForKey:@"value"],
+            @"timestamp" : dateString,
+            @"unit" : [hkDict valueForKey:@"unit"],
+            @"device_name" : [hkDict valueForKey:@"source"],
+            };
+        }
         else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierBodyMass])
         {
             unit = [hkDict valueForKey:@"unit"];
@@ -719,6 +1390,25 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
             @"minutes" : [hkDict valueForKey:@"minutes"],
             };
         }
+        else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierDietaryProtein] ||
+                 [type.identifier isEqualToString:HKQuantityTypeIdentifierDietaryCarbohydrates] ||
+                 [type.identifier isEqualToString:HKQuantityTypeIdentifierDietaryFatMonounsaturated] ||
+                 [type.identifier isEqualToString:HKQuantityTypeIdentifierDietaryFatPolyunsaturated] ||
+                 [type.identifier isEqualToString:HKQuantityTypeIdentifierDietaryFatSaturated] ||
+                 [type.identifier isEqualToString:HKQuantityTypeIdentifierDietaryFatTotal] ||
+                 [type.identifier isEqualToString:HKQuantityTypeIdentifierDietaryEnergyConsumed] ||
+                  [type.identifier isEqualToString:HKQuantityTypeIdentifierBodyFatPercentage] ||
+                 [type.identifier isEqualToString:HKQuantityTypeIdentifierOxygenSaturation] ||
+                 [type.identifier isEqualToString:HKQuantityTypeIdentifierRespiratoryRate] ||
+                 [type.identifier isEqualToString:HKQuantityTypeIdentifierBasalBodyTemperature]
+                 ) {
+            hkReading = @{ @"h_id" : uuid,
+            @"value" : [hkDict valueForKey:@"value"],
+            @"timestamp" : [hkDict valueForKey:@"startDate"],
+            @"unit" : [hkDict valueForKey:@"unit"],
+            @"device_name" : [hkDict valueForKey:@"source"],
+            };
+        }
         else if (@available(iOS 11.0, *)) {
             if ([type.identifier isEqualToString:HKQuantityTypeIdentifierHeartRateVariabilitySDNN])
             {
@@ -729,6 +1419,25 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                 @"unit" : [hkDict valueForKey:@"unit"],
                 @"device_name" : [hkDict valueForKey:@"source"],
                 };
+            }
+            else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierWaistCircumference])
+            {
+                hkReading = @{ @"h_id" : uuid,
+                @"value" : [hkDict valueForKey:@"value"],
+                @"timestamp" : [hkDict valueForKey:@"startDate"],
+                @"unit" : [hkDict valueForKey:@"unit"],
+                @"device_name" : [hkDict valueForKey:@"source"],
+                };
+            }
+            else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierRestingHeartRate] ||
+                     [type.identifier isEqualToString:HKQuantityTypeIdentifierVO2Max])
+            {
+                hkReading = @{ @"h_id" : uuid,  
+                               @"value" : [hkDict valueForKey:@"value"],
+                               @"timestamp" : [hkDict valueForKey:@"startDate"],
+                               @"unit" : [hkDict valueForKey:@"unit"],
+                               @"device_name" : [hkDict valueForKey:@"source"],
+                               };
             }
         }
         [jsonArray addObject:hkReading];
@@ -847,30 +1556,36 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                                                [dict setValue:[NSNumber numberWithInteger:(int)floor(maxDouble)] forKey:@"max_value"];
                                            }
                                        }
-                                       else if ([type.identifier isEqualToString:@"HKQuantityTypeIdentifierBodyMassIndex"]) {
+                                       else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierBodyMassIndex] ||
+                                                [type.identifier isEqualToString:HKQuantityTypeIdentifierFlightsClimbed]) {
                                            valueDouble = [qtyVal doubleValueForUnit:[HKUnit unitFromString:@"count"]];
                                        }
-                                       else if ([type.identifier isEqualToString:@"HKQuantityTypeIdentifierFlightsClimbed"]) {
-                                           valueDouble = [qtyVal doubleValueForUnit:[HKUnit unitFromString:@"count"]];
+                                       else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierActiveEnergyBurned]) {
+                                           valueDouble = [qtyVal doubleValueForUnit:[HKUnit kilocalorieUnit]];
                                        }
                                        else {
                                            valueDouble = [qtyVal doubleValueForUnit:unit];
                                        }
                                        
-                                       valueInt = (int)lroundf(valueDouble);
-                                       
-                                       // Added this code to try and match Apple's statistical rounding
-                                       // It's better, but not 100% yet
-                                       valueFloor = floorf(valueDouble);
-                                       if (valueDouble != valueFloor) {
-                                           NSNumber *doubleNumber = [NSNumber numberWithDouble:(valueDouble)];
-                                           NSString *doubleString = [doubleNumber stringValue];
-                                           if ([doubleString containsString:@".5"]) {
-                                               if (valueInt % 2) {
-                                                   valueInt--;
-                                               }
-                                           }
-                                       }
+                                        if ([type.identifier isEqualToString:HKQuantityTypeIdentifierActiveEnergyBurned]) {
+                                            valueInt = floorf(valueDouble);
+                                        }
+                                        else {
+                                            valueInt = (int)lroundf(valueDouble);
+                                            
+                                            // Added this code to try and match Apple's statistical rounding
+                                            // It's better, but not 100% yet
+                                            valueFloor = floorf(valueDouble);
+                                            if (valueInt != valueFloor) {  // TODO: Test this
+                                                NSNumber *doubleNumber = [NSNumber numberWithDouble:(valueDouble)];
+                                                NSString *doubleString = [doubleNumber stringValue];
+                                                if ([doubleString containsString:@".5"]) {
+                                                    if (valueInt % 2) {
+                                                        valueInt--;
+                                                    }
+                                                }
+                                            }
+                                        }
                                        
                                        // Ignore zero value heart rate records
                                        bool addToArray = true;
@@ -921,182 +1636,6 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
     }
 }
 
-//-(NSString *)getHeadsUpTypeFromHealthKitType:(NSString *)type
-//{
-//    if ([type isEqualToString:HKQuantityTypeIdentifierDietaryFatMonounsaturated]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryFatPolyunsaturated]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryFatSaturated]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryFatTotal]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryFiber]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryFolate]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryIodine]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryIron]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryMagnesium]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryManganese]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryMolybdenum]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryNiacin]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryPantothenicAcid]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryPhosphorus]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryPotassium]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryProtein]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryRiboflavin]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietarySelenium]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietarySodium]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietarySugar]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryThiamin]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryVitaminA]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryVitaminB12]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryVitaminB6]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryVitaminC]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryVitaminD]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryVitaminE]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryVitaminK]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryZinc]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierDietaryWater]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierHeartRate]) {//Earlier
-//        return @"heart_rate";
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierLeanBodyMass]) {
-//        return @"lbs";
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierBloodPressureDiastolic] ||
-//             [type isEqualToString:HKQuantityTypeIdentifierBloodPressureSystolic]) {
-//        return @"blood_pressure";
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierBodyMassIndex]) {
-//        return @"bmi";
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierBodyFatPercentage]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierBodyTemperature]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierRespiratoryRate]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierDistanceCycling]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierStepCount]) {
-//        return @"steps";
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierActiveEnergyBurned]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierBasalEnergyBurned]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierDistanceWalkingRunning]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierFlightsClimbed]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKCategoryTypeIdentifierSleepAnalysis]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKCharacteristicTypeIdentifierDateOfBirth]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKCharacteristicTypeIdentifierBiologicalSex]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKCharacteristicTypeIdentifierBloodType]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKCharacteristicTypeIdentifierWheelchairUse]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierHeight]) {
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierBodyMass]) {
-//        return @"weight";
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierBloodGlucose]) {
-//        return @"blood_glucoses";
-//    }
-//    else if ([type isEqualToString:HKQuantityTypeIdentifierNikeFuel]) {//NOT GETTING DATA
-//        return type;
-//    }
-//    else if ([type isEqualToString:HKCategoryTypeIdentifierMindfulSession]) {//NOT GETTING DATA
-//        return type;
-//    }
-//    else if (@available(iOS 11.0, *)) {
-//        if ([type isEqualToString:HKQuantityTypeIdentifierHeartRateVariabilitySDNN]) {
-//            return @"hrv";
-//        }
-//        else {
-//            return type;
-//        }
-//    }
-//    else {
-//        return type;
-//    }
-//    return nil;
-//}
-
 //Akshay
 -(void)setUpBackgroundDeliveryForDataTypes :(NSSet*) types {
     
@@ -1145,356 +1684,74 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
     }
 }
 
--(void)queryForUpdates:(HKQuantityType *)type
-             predicate:(NSPredicate *)predicate
-            completion:(void (^)(NSArray *,NSArray *, NSError *, HKQueryAnchor *anchor))completion
-{
-    NSString *str = type.identifier;
-    
-    NSLog(@"00xxxc7. queryForUpdates() type.identifier = %@", str);
-    
-    if ([str isEqualToString:HKQuantityTypeIdentifierDietaryFatMonounsaturated]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryFatPolyunsaturated]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-            
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryFatSaturated]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryFatTotal]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryFiber]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryFolate]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryIodine]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryIron]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryMagnesium]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryManganese]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryMolybdenum]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryNiacin]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryPantothenicAcid]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryPhosphorus]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryPotassium]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryProtein]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryRiboflavin]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierDietarySelenium]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierDietarySodium]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierDietarySugar]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryThiamin]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryVitaminA]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryVitaminB12]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryVitaminB6]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryVitaminC]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryVitaminD]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryVitaminE]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryVitaminK]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryZinc]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryWater]) {
-        [self getIndividualRecords:type unit:[HKUnit literUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierHeartRate]) {//DONE EARLIER
-        [self getIndividualRecords:type unit:[HKUnit countUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierLeanBodyMass]) {//DONE
-        [self getIndividualRecords:type unit:[HKUnit poundUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierBloodPressureDiastolic] ||
-             [str isEqualToString:HKQuantityTypeIdentifierBloodPressureSystolic]) {//DONE
-        [self getIndividualRecords:type unit:[HKUnit millimeterOfMercuryUnit]
-                         predicate:predicate
-                        completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-                            completion(results, arrDeleted, error, anchor);
-                        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierBodyMassIndex]) {//DONE
-        [self getIndividualRecords:type unit:[HKUnit mileUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierBodyFatPercentage]) {//DONE
-        [self getIndividualRecords:type unit:[HKUnit percentUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierBodyTemperature]) {//DONE
-        [self getIndividualRecords:type unit:[HKUnit degreeCelsiusUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierRespiratoryRate]) {//DONE
-        [self getIndividualRecords:type unit:[HKUnit countUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierDistanceCycling]) {//DONE
-        [self getIndividualRecords:type unit:[HKUnit mileUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierStepCount]) {//DONE
-        [self getIndividualRecords:type unit:[HKUnit countUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierActiveEnergyBurned]) {//DONE
-        [self getIndividualRecords:type unit:[HKUnit kilocalorieUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierBasalEnergyBurned]) {//DONE
-        [self getIndividualRecords:type unit:[HKUnit kilocalorieUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierDistanceWalkingRunning]) {//DONE
-        [self getIndividualRecords:type unit:[HKUnit mileUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierFlightsClimbed]) {//DONE
-        [self getIndividualRecords:type unit:[HKUnit kilocalorieUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKCategoryTypeIdentifierSleepAnalysis]) {//Done
-       // [self getCategoryQueriesResult:type unit:[HKUnit kilocalorieUnit]];
-        [self getIndividualRecords:type unit:[HKUnit kilocalorieUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKCharacteristicTypeIdentifierDateOfBirth]) {//DONE
-        NSError *error;
-        NSDate *dateOfBirth = [self.healthStore dateOfBirthWithError:&error];
-        NSDateFormatter *df = [[NSDateFormatter alloc] init];
-        df.dateFormat = @"dd-MM-yyyy";
-        NSString *strDate = [df stringFromDate:dateOfBirth];
-        [self convertCharacteristicsData:type.identifier values:strDate];
-    }
-    else if ([str isEqualToString:HKCharacteristicTypeIdentifierBiologicalSex]) {//DONE
-        NSError *error;
-        HKBiologicalSexObject *gen=[self.healthStore biologicalSexWithError:&error];
-        NSString *strGender=@"";
-        if (gen.biologicalSex==HKBiologicalSexMale) {
-            strGender=@"Male";
+#pragma mark GET Category Queries Result
+-(void)getCategoryQueriesResult : (HKQuantityType *)type unit:(HKUnit *)unit {
+    NSUInteger limit = HKObjectQueryNoLimit;
+    BOOL ascending = false;
+    NSDate *startDate = [NSDate date];
+    NSDate *endDate = [NSDate date];
+    NSPredicate *predicate = [HKQuery predicateForSamplesWithStartDate:startDate endDate:endDate options:HKQueryOptionNone];
+    [self fetchCategoryOfType:type unit:unit predicate:predicate ascending:ascending limit:limit completion:^(NSString *results, NSError *error, HKCategorySample *sample) {
+        if(results){
+            [self convertDataToArrayForCategory:type.identifier values:results qty:sample];
+        } else {
+            NSLog(@"error getting samples: %@", error);
         }
-        else if (gen.biologicalSex==HKBiologicalSexFemale) {
-            strGender=@"Female";
-        }
-        else if (gen.biologicalSex==HKBiologicalSexOther) {
-            strGender=@"Other";
-        }
-        else {
-            strGender=@"Not Set";
-        }
-        [self convertCharacteristicsData:type.identifier values:strGender];
-    }
-    else if ([str isEqualToString:HKCharacteristicTypeIdentifierBloodType]) {//DONE
-        NSError *error;
-        NSString *bloodGroup =@"";
-        HKBloodTypeObject *bloodType = [self.healthStore bloodTypeWithError:&error];
-        switch (bloodType.bloodType) {
-            case HKBloodTypeNotSet:
-                bloodGroup = @"Not Set";
-                break;
-            case HKBloodTypeAPositive:
-                bloodGroup = @"A+";
-                break;
-            case HKBloodTypeANegative:
-                bloodGroup = @"A-";
-                break;
-            case HKBloodTypeBPositive:
-                bloodGroup = @"B+";
-                break;
-            case HKBloodTypeBNegative:
-                bloodGroup = @"B-";
-                break;
-            case HKBloodTypeABPositive:
-                bloodGroup = @"AB+";
-                break;
-            case HKBloodTypeABNegative:
-                bloodGroup = @"AB-";
-                break;
-            case HKBloodTypeOPositive:
-                bloodGroup = @"O+";
-                break;
-            case HKBloodTypeONegative:
-                bloodGroup = @"O-";
-                break;
-        }
-        [self convertCharacteristicsData:type.identifier values:bloodGroup];
-    }
-    else if ([str isEqualToString:HKCharacteristicTypeIdentifierWheelchairUse]) {//DONE
-        NSError *error;
-        HKWheelchairUseObject *wheelChair = [self.healthStore wheelchairUseWithError:&error];
-        NSString *wheelChairUse = @"";
-        switch (wheelChair.wheelchairUse) {
-            case HKWheelchairUseNotSet:
-                wheelChairUse = @"Not Set";
-                break;
-            case HKWheelchairUseNo:
-                wheelChairUse = @"No";
-                break;
-            case HKWheelchairUseYes:
-                wheelChairUse = @"Yes";
-                break;
-            default:
-                break;
-        }
-        [self convertCharacteristicsData:type.identifier values:wheelChairUse];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierHeight]) {//DONE
-        [self getOtherQueriesResult:type unit:[HKUnit footUnit]];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierBodyMass]) {//DONE
-        //[self getOtherQueriesResult:type unit:[HKUnit poundUnit]];
-        [self getIndividualRecords:type unit:[HKUnit poundUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierBloodGlucose]) {//DONE
-        //[self getOtherQueriesResult:type unit:[HKUnit poundUnit]];
-        [self getIndividualRecords:type unit:[HKUnit unitFromString: @"mg/dL"] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierNikeFuel]) {//NOT GETTING DATA
-        //        [self getOtherQueriesResult:type unit:[HKUnit countUnit]];
-    }
-    else if ([str isEqualToString:HKCategoryTypeIdentifierMindfulSession]) {//NOT GETTING DATA
-        [self getIndividualRecords:type unit:[HKUnit countUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-    }
-    else if (@available(iOS 11.0, *)) {
-        if ([str isEqualToString:HKQuantityTypeIdentifierHeartRateVariabilitySDNN]) {
-        [self getIndividualRecords:type unit:[HKUnit countUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
-        }];
-        }
-        else {
-            NSLog(@"%@",str);
-        }
-    }
-    else {
-        NSLog(@"%@",str);
-    }
+    }];
 }
+
+-(void)fetchCategoryOfType:(HKQuantityType *)type unit:(HKUnit *)unit predicate:(NSPredicate *)predicate ascending:(BOOL)asc limit:(NSUInteger)lim completion:(void (^)(NSString *, NSError *, HKCategorySample *sample))completion {
+    
+    HKSampleQuery *qry = [[HKSampleQuery alloc] initWithSampleType:type predicate:nil limit:HKObjectQueryNoLimit sortDescriptors:nil resultsHandler:^(HKSampleQuery * _Nonnull query, NSArray<__kindof HKSample *> * _Nullable results, NSError * _Nullable error) {
+        NSString *strSleepValue = @"";
+        for (HKCategorySample *sample in results) {
+            switch (sample.value) {
+                case HKCategoryValueSleepAnalysisInBed:
+                    strSleepValue = @"In Bed";
+                    break;
+                case HKCategoryValueSleepAnalysisAsleep:
+                    strSleepValue = @"Asleep";
+                    break;
+                case HKCategoryValueSleepAnalysisAwake:
+                    strSleepValue = @"Awake";
+                    break;
+                default:
+                    break;
+            }
+            completion(strSleepValue,error,sample);
+        }
+    }];
+    [self.healthStore executeQuery:qry];
+}
+
+#pragma mark GET Other Queries Result
+-(void)getOtherQueriesResult : (HKQuantityType *)type unit:(HKUnit *)unit {
+    NSUInteger limit = HKObjectQueryNoLimit;
+    BOOL ascending = false;
+    NSDate *startDate = [NSDate date];
+    NSDate *endDate = [NSDate date];
+    NSPredicate *predicate = [HKQuery predicateForSamplesWithStartDate:startDate endDate:endDate options:HKQueryOptionNone];
+    
+    [self fetchSamplesOfType:type unit:unit predicate:predicate ascending:ascending limit:limit completion:^(NSArray *results, NSError *error) {
+        if(results){
+            
+            for (HKQuantitySample *sample in results) {
+                NSString *qtyType = [NSString stringWithFormat:@"%@",sample.quantity];
+                [self convertDataToArray:type.identifier values:qtyType qty:sample unit:unit];
+            }
+        } else {
+            NSLog(@"error getting samples: %@", error);
+        }
+    }];
+}
+
+-(void)fetchSamplesOfType:(HKQuantityType *)type unit:(HKUnit *)unit predicate:(NSPredicate *)predicate ascending:(BOOL)asc limit:(NSUInteger)lim completion:(void (^)(NSArray *, NSError *))completion {
+    HKSampleQuery *qry = [[HKSampleQuery alloc] initWithSampleType:type predicate:nil limit:HKObjectQueryNoLimit sortDescriptors:nil resultsHandler:^(HKSampleQuery * _Nonnull query, NSArray<__kindof HKSample *> * _Nullable results, NSError * _Nullable error) {
+        completion(results,error);
+    }];
+    [self.healthStore executeQuery:qry];
+}
+//Over
 
 -(NSString *)getDictKeyAndUnit:(NSString *)str keyUnit:(int)keyUnit {
     if ([str isEqualToString:HKQuantityTypeIdentifierDietaryFatMonounsaturated]) {
@@ -2109,344 +2366,6 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         callback(@[@"Failed",error.description]);
     }
 }
-
-//values : (NSString *)value arrayAddedObject : (NSMutableArray *)arr  values: (NSMutableArray *)arrDeleted
-
-#pragma mark GET Individual Records
--(void)getIndividualRecords : (HKQuantityType *)type
-                        unit:(HKUnit *)unit
-                   predicate:(NSPredicate *)predicate
-                  completion:(void (^)(NSMutableArray *,NSMutableArray *, NSError *, HKQueryAnchor *))completion
-{
-    NSUInteger limit = HKObjectQueryNoLimit;
-    BOOL ascending = false;
-    
-    [self fetchIndividualRecords:type
-                            unit:unit
-                       predicate:predicate
-                       ascending:ascending
-                           limit:limit
-                      completion:^(NSArray *results, NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-                          
-                          // Completion handler called from HKAnchoredObjectQuery
-                          if(results) {
-                              
-                              NSMutableArray *arrayAdded = [self createReadingsDictionaryFromArray:results type:type unit:unit];
-                              NSMutableArray *arrayDeleted = [arrDeleted mutableCopy];
-
-                              // Call the completion handler
-                              completion(arrayAdded, arrayDeleted, nil, anchor);
-                          }
-                          else {
-                              NSLog(@"Error fetching samples from HealthKit: %@", error);
-                              completion(nil, nil, error, anchor);
-                          }
-                      }];
-}
-
--(NSMutableArray *)createReadingsDictionaryFromArray:(NSArray *)results type:(HKQuantityType *)type unit:(HKUnit *)unit
-{
-    // Create an array of dictionary objects from the query results
-    NSMutableArray *arr = [[NSMutableArray alloc] init];
-    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
-    [dateFormatter setDateFormat:@"yyyy-MM-dd'T'HH:mm"];
-    HKQuantityType *systolicType = [HKQuantityType quantityTypeForIdentifier:HKQuantityTypeIdentifierBloodPressureSystolic];
-    HKQuantityType *diastolicType = [HKQuantityType quantityTypeForIdentifier:HKQuantityTypeIdentifierBloodPressureDiastolic];
-    
-    for (int i=0; i<results.count; i++) {
-        HKQuantitySample *qty = [results objectAtIndex:i];
-        
-        NSDate *startDate = qty.startDate;
-        NSDate *endDate = qty.endDate;
-        
-        NSTimeInterval startTimeStamp  = [startDate timeIntervalSince1970];
-        NSTimeInterval endTimeStamp  = [endDate timeIntervalSince1970];
-        NSString *startTime = [NSString stringWithFormat:@"%f",startTimeStamp];
-        NSString *endTime = [NSString stringWithFormat:@"%f",endTimeStamp];
-        
-        NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
-        [dict setValue:startTime forKey:@"startTimestamp"];
-        [dict setValue:endTime forKey:@"endTimestamp"];
-        [dict setValue:[dateFormatter stringFromDate:startDate] forKey:@"startDate"];
-        [dict setValue:[dateFormatter stringFromDate:endDate] forKey:@"endDate"];
-        HKQuantity *qtyVal;
-        HKQuantity *qtyVal2;
-        double doubleValue = 0.0;
-        double doubleValue2 = 0.0;
-        
-        // Check if it's an HKCorrelation
-        if ([qty isKindOfClass:[HKCorrelation class]]) {
-            HKCorrelation *correlation = (HKCorrelation *)qty;
-            
-            if ([type.identifier isEqualToString:@"HKQuantityTypeIdentifierBloodPressureSystolic"] ||
-                [type.identifier isEqualToString:@"HKQuantityTypeIdentifierBloodPressureDiastolic"]) {
-                HKQuantitySample *bloodPressureSystolicValue = [correlation objectsForType:systolicType].anyObject;
-                HKQuantitySample *bloodPressureDiastolicValue = [correlation objectsForType:diastolicType].anyObject;
-                qtyVal = bloodPressureDiastolicValue.quantity;
-                qtyVal2 = bloodPressureSystolicValue.quantity;
-            }
-            NSString *strQTYType = [NSString stringWithFormat:@"%@", correlation.correlationType];
-            [dict setValue:strQTYType forKey:@"quantityType"];
-            NSString *strSampleType = [NSString stringWithFormat:@"%@",correlation.correlationType];
-            [dict setValue:strSampleType forKey:@"sampleType"];
-        }
-        else if ([qty isKindOfClass:[HKCategorySample class]]) {
-            if ([type.identifier isEqualToString:HKCategoryTypeIdentifierSleepAnalysis]) {
-                HKCategorySample * categorySample = (HKCategorySample *)qty;
-                NSString *strSleepValue;
-                switch (categorySample.value) {
-                    case HKCategoryValueSleepAnalysisInBed:
-                        strSleepValue = @"In Bed";
-                        break;
-                    case HKCategoryValueSleepAnalysisAsleep:
-                        strSleepValue = @"Asleep";
-                        break;
-                    case HKCategoryValueSleepAnalysisAwake:
-                        strSleepValue = @"Awake";
-                        break;
-                    default:
-                        break;
-                }
-                [dict setValue:strSleepValue forKey:@"value"];
-            }
-        }
-        else {
-            qtyVal = qty.quantity;
-            NSString *strQTYType = [NSString stringWithFormat:@"%@",qty.quantityType];
-            [dict setValue:strQTYType forKey:@"quantityType"];
-            NSString *strSampleType = [NSString stringWithFormat:@"%@",qty.quantityType];
-            [dict setValue:strSampleType forKey:@"sampleType"];
-        }
-        
-        // TODO: Test this
-        // Derive the unit - mmHg for blood pressure
-        if (qtyVal != nil) {
-                    NSString *strQtyValue = [NSString stringWithFormat:@"%@", qtyVal];
-            NSArray *arrSplitValueUnit = [strQtyValue componentsSeparatedByString:@" "];
-            NSString *strUnit = @"";
-            if (arrSplitValueUnit.count >= 2) {
-                strUnit = [arrSplitValueUnit objectAtIndex:1];
-            }
-            else {
-                NSString *qtyTypeIdentifier = [NSString stringWithFormat:@"%@",qty.quantityType];
-                strUnit = [self getDictKeyAndUnit:qtyTypeIdentifier keyUnit:2];
-            }
-            
-            if ([type.identifier isEqualToString:HKQuantityTypeIdentifierHeartRate] || [type.identifier isEqualToString:HKQuantityTypeIdentifierRespiratoryRate]) {
-                doubleValue = [qtyVal doubleValueForUnit:[HKUnit unitFromString:@"count/min"]];
-            }
-            else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierBodyMassIndex]) {
-                doubleValue = [qtyVal doubleValueForUnit:[HKUnit unitFromString:@"count"]];
-            }
-            else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierFlightsClimbed]) {
-                doubleValue = [qtyVal doubleValueForUnit:[HKUnit unitFromString:@"count"]];
-            }
-            else {
-                // TODO: See if this should be derived from HK or specified by HU
-                unit = [HKUnit unitFromString:strUnit];
-                doubleValue = [qtyVal doubleValueForUnit:unit];
-                if ([type.identifier isEqualToString:HKQuantityTypeIdentifierBloodGlucose] && [strUnit hasPrefix:@"mmol"]) {
-                    strUnit = @"mmol/L";
-                }
-            }
-            [dict setValue:strUnit forKey:@"unit"];
-            
-            if ([type.identifier isEqualToString:HKQuantityTypeIdentifierBloodPressureSystolic] ||
-                [type.identifier isEqualToString:HKQuantityTypeIdentifierBloodPressureDiastolic]) {
-                int intValue = (int)floor(doubleValue);
-                [dict setValue:[NSString stringWithFormat:@"%i",intValue] forKey:@"value"];
-            }
-            else {
-                NSString *strQTY = [NSString stringWithFormat:@"%f",doubleValue];
-                [dict setValue:strQTY forKey:@"value"];
-            }
-        }
-        
-        // Need to get second value if it's a correlation
-        if ([qty isKindOfClass:[HKCorrelation class]]) {
-            doubleValue2 = [qtyVal2 doubleValueForUnit:unit];
-            if ([type.identifier isEqualToString:HKQuantityTypeIdentifierBloodPressureSystolic] ||
-                [type.identifier isEqualToString:HKQuantityTypeIdentifierBloodPressureDiastolic]) {
-                int intValue = (int)floor(doubleValue2);
-                [dict setValue:[NSString stringWithFormat:@"%i",intValue] forKey:@"value2"];
-            }
-            else {
-                NSString *strQTY2 = [NSString stringWithFormat:@"%f",doubleValue2];
-                [dict setValue:strQTY2 forKey:@"value2"];
-            }
-        }
-        
-        NSString *strSourceName = qty.sourceRevision.source.name;
-        [dict setValue:strSourceName forKey:@"source"];
-        
-        NSString *strUUID = [NSString stringWithFormat:@"%@",qty.UUID];
-        [dict setValue:strUUID forKey:@"UUID"];
-        
-        NSString *strDevice = [NSString stringWithFormat:@"%@",qty.device];
-        [dict setValue:strDevice forKey:@"device"];
-        
-        if ([type.identifier isEqualToString:HKQuantityTypeIdentifierBloodGlucose]) {
-            NSObject * mealTag = [qty.metadata objectForKey:@"HKBloodGlucoseMealTime"];
-            if (mealTag) {
-                NSNumber *mealTagNumber = (NSNumber *)mealTag;
-                if ([mealTagNumber intValue] == 1) {
-                     [dict setValue:@"before" forKey:@"meal_tag"];
-                }
-                else if ([mealTagNumber intValue] == 2) {
-                [dict setValue:@"2hr" forKey:@"meal_tag"];
-                }
-                else {
-                    [dict setValue:@"" forKey:@"meal_tag"];
-                }
-            }
-            else {
-                [dict setValue:@"" forKey:@"meal_tag"];
-            }
-        }
-        else if ([type.identifier isEqualToString:HKCategoryTypeIdentifierMindfulSession]) {
-            NSTimeInterval sessionSeconds = [endDate timeIntervalSinceDate:startDate];
-            NSInteger sessionMinutes = sessionSeconds / 60;
-            NSString *stringMinutes = [NSString stringWithFormat: @"%ld", (long)sessionMinutes];
-            [dict setValue:stringMinutes forKey:@"minutes"];
-        }
-        
-        //NSLog(@"dict:%@",dict);
-        [arr addObject:dict];
-    }
-    return arr;
-}
-
--(void)fetchIndividualRecords :(HKQuantityType *)type unit:(HKUnit *)unit predicate:(NSPredicate *)predicate ascending:(BOOL)asc limit:(NSUInteger)lim completion:(void (^)(NSArray *,NSArray *, NSError *, HKQueryAnchor *))completion {
-    
-    HKQueryAnchor *newAnchor = nil;
-    
-    // Check for an existing anchor object for this type IF no predicate w/ start/end dates has been passed
-    // If no anchor exists, newAnchor == nil, which retrieves all records for the type
-    if (predicate == nil && [[NSUserDefaults standardUserDefaults]valueForKey:[NSString stringWithFormat:@"newAnchor%@",type.identifier]] != nil) {
-
-        // Anchor exists, use it
-        newAnchor = [self loadCustomObjectWithKey:[NSString stringWithFormat:@"newAnchor%@",type.identifier]];
-    }
-    
-    if (newAnchor) {
-        NSLog(@"00xxxc8 fetchIndividualRecords() newAnchor is NOT nil");
-    }
-    else {
-        NSLog(@"00xxxc8 fetchIndividualRecords() newAnchor is nil");
-    }
-    
-    HKSampleType *sampleType = type;
-    // If Diastolic or Systolic blood pressure, convert to Blood Pressure correlation type
-    if ([type.identifier isEqualToString:HKQuantityTypeIdentifierBloodPressureDiastolic] ||
-        [type.identifier isEqualToString:HKQuantityTypeIdentifierBloodPressureSystolic]) {
-        sampleType = [HKCorrelationType correlationTypeForIdentifier:HKCorrelationTypeIdentifierBloodPressure];
-    }
-    
-    // Create the anchored object query
-    HKAnchoredObjectQuery *query =
-        [[HKAnchoredObjectQuery alloc]initWithType:sampleType
-                                         predicate:predicate
-                                            anchor:newAnchor
-                                             limit:HKObjectQueryNoLimit
-                                    resultsHandler:^(HKAnchoredObjectQuery * _Nonnull query,
-                                                     NSArray<__kindof HKSample *> * _Nullable sampleObjects,
-                                                     NSArray<HKDeletedObject *> * _Nullable deletedObjects,
-                                                     HKQueryAnchor * _Nullable newAnchor,
-                                                     NSError * _Nullable error) {
-                                                                   
-            NSLog(@"00xxxc10 HKAnchoredObjectQuery resultsHandler() Type:%@ sampleObjects.count:%lu deletedObjects.count:%lu",
-                  type.identifier,
-                  (unsigned long)sampleObjects.count,
-                  (unsigned long)deletedObjects.count);
-        
-            NSMutableArray *arrUUID = [[NSMutableArray alloc]init];
-        
-            for (HKDeletedObject *objdelete in deletedObjects) {
-                NSString *strUUID = [NSString stringWithFormat:@"%@",objdelete.UUID];
-                [arrUUID addObject:strUUID];
-            }
-
-            // If start/end dates have been passed, don't return an anchor
-            if (predicate != nil) {
-                newAnchor = nil;
-            }
-            completion(sampleObjects, arrUUID, error, newAnchor);
-        }];
-    
-    NSLog(@"00xxxc9 fetchIndividualRecords() execute query");
-    
-    [self.healthStore executeQuery:query];
-    
-}
-
-#pragma mark GET Category Queries Result
--(void)getCategoryQueriesResult : (HKQuantityType *)type unit:(HKUnit *)unit {
-    NSUInteger limit = HKObjectQueryNoLimit;
-    BOOL ascending = false;
-    NSDate *startDate = [NSDate date];
-    NSDate *endDate = [NSDate date];
-    NSPredicate *predicate = [HKQuery predicateForSamplesWithStartDate:startDate endDate:endDate options:HKQueryOptionNone];
-    [self fetchCategoryOfType:type unit:unit predicate:predicate ascending:ascending limit:limit completion:^(NSString *results, NSError *error, HKCategorySample *sample) {
-        if(results){
-            [self convertDataToArrayForCategory:type.identifier values:results qty:sample];
-        } else {
-            NSLog(@"error getting samples: %@", error);
-        }
-    }];
-}
-
--(void)fetchCategoryOfType:(HKQuantityType *)type unit:(HKUnit *)unit predicate:(NSPredicate *)predicate ascending:(BOOL)asc limit:(NSUInteger)lim completion:(void (^)(NSString *, NSError *, HKCategorySample *sample))completion {
-    
-    HKSampleQuery *qry = [[HKSampleQuery alloc] initWithSampleType:type predicate:nil limit:HKObjectQueryNoLimit sortDescriptors:nil resultsHandler:^(HKSampleQuery * _Nonnull query, NSArray<__kindof HKSample *> * _Nullable results, NSError * _Nullable error) {
-        NSString *strSleepValue = @"";
-        for (HKCategorySample *sample in results) {
-            switch (sample.value) {
-                case HKCategoryValueSleepAnalysisInBed:
-                    strSleepValue = @"In Bed";
-                    break;
-                case HKCategoryValueSleepAnalysisAsleep:
-                    strSleepValue = @"Asleep";
-                    break;
-                case HKCategoryValueSleepAnalysisAwake:
-                    strSleepValue = @"Awake";
-                    break;
-                default:
-                    break;
-            }
-            completion(strSleepValue,error,sample);
-        }
-    }];
-    [self.healthStore executeQuery:qry];
-}
-
-#pragma mark GET Other Queries Result
--(void)getOtherQueriesResult : (HKQuantityType *)type unit:(HKUnit *)unit {
-    NSUInteger limit = HKObjectQueryNoLimit;
-    BOOL ascending = false;
-    NSDate *startDate = [NSDate date];
-    NSDate *endDate = [NSDate date];
-    NSPredicate *predicate = [HKQuery predicateForSamplesWithStartDate:startDate endDate:endDate options:HKQueryOptionNone];
-    
-    [self fetchSamplesOfType:type unit:unit predicate:predicate ascending:ascending limit:limit completion:^(NSArray *results, NSError *error) {
-        if(results){
-            
-            for (HKQuantitySample *sample in results) {
-                NSString *qtyType = [NSString stringWithFormat:@"%@",sample.quantity];
-                [self convertDataToArray:type.identifier values:qtyType qty:sample unit:unit];
-            }
-        } else {
-            NSLog(@"error getting samples: %@", error);
-        }
-    }];
-}
-
--(void)fetchSamplesOfType:(HKQuantityType *)type unit:(HKUnit *)unit predicate:(NSPredicate *)predicate ascending:(BOOL)asc limit:(NSUInteger)lim completion:(void (^)(NSArray *, NSError *))completion {
-    HKSampleQuery *qry = [[HKSampleQuery alloc] initWithSampleType:type predicate:nil limit:HKObjectQueryNoLimit sortDescriptors:nil resultsHandler:^(HKSampleQuery * _Nonnull query, NSArray<__kindof HKSample *> * _Nullable results, NSError * _Nullable error) {
-        completion(results,error);
-    }];
-    [self.healthStore executeQuery:qry];
-}
-//Over
 
 -(void)getModuleInfo:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback {
     NSDictionary *info = @{
