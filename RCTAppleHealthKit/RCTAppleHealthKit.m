@@ -307,17 +307,25 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
     if ([HKHealthStore isHealthDataAvailable]) {
         NSSet *writeDataTypes;
         NSSet *readDataTypes;
-        // No longer get permissions from input object provided by JS options argument
-        // Pick them up from the allowable permissions in RCTAppleHealthKit+TypesAndPermissions
-//        NSDictionary* permissions =[input objectForKey:@"permissions"];
-        NSSet* readPerms = [self getReadPerms];
-        NSSet* writePerms = [self getWritePerms];
         
-        if(readPerms != nil) {
-            readDataTypes = readPerms;
-        }
-        if(writePerms != nil) {
-            writeDataTypes = writePerms;
+        
+        // get permissions from input object provided by JS options argument
+        NSDictionary* permissions =[input objectForKey:@"permissions"];
+        if(permissions != nil){
+            NSArray* readPermsArray = [permissions objectForKey:@"read"];
+            NSArray* writePermsArray = [permissions objectForKey:@"write"];
+            NSSet* readPerms = [self getReadPermsFromOptions:readPermsArray];
+            NSSet* writePerms = [self getWritePermsFromOptions:writePermsArray];
+            
+            if(readPerms != nil) {
+                readDataTypes = readPerms;
+            }
+            if(writePerms != nil) {
+                writeDataTypes = writePerms;
+            }
+        } else {
+            callback(@[RCTMakeError(@"permissions must be provided in the initialization options", nil, nil)]);
+            return;
         }
         
         [self.healthStore requestAuthorizationToShareTypes:writeDataTypes readTypes:readDataTypes completion:^(BOOL success, NSError *error) {
@@ -399,7 +407,9 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
     }
     
     NSString *userid = [input objectForKey:@"userid"];
-    NSSet* types = [self getReadPerms];
+    NSArray *readPermsArray = [input objectForKey:@"permissions"];
+    NSSet* types = [self getReadPermsFromOptions:readPermsArray];
+    
     self.jsonObject = [[NSMutableDictionary alloc] init];
     self.jsonDeletedObject = [[NSMutableDictionary alloc] init];
     self.anchorsToDrop = [[NSMutableDictionary alloc] init];
@@ -1189,6 +1199,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
     }
     
     self.typeCount++;
+    NSLog(@"20xxx01. processHealthKitResults() key:%@ count: %i of %i", key.identifier, (int)self.typeCount, (int)typesCount);
     if (self.typeCount == typesCount) {
         [self callBackHealthKitResults:callback];
     }
@@ -1505,7 +1516,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         
         __block NSString *dateString;
 
-        NSLog(@"00xxxc10b queryForQuantitySummary() fromDate: %@, toDate: %@", fromDate, toDate);
+        NSLog(@"00xxxc10b queryForQuantitySummary() type: %@ fromDate: %@, toDate: %@", type.identifier, fromDate, toDate);
         
 //        NSDate *enumFromDate = [dateFormatter dateFromString:fromDate];
 //        NSDate *enumToDate = [dateFormatter dateFromString:toDate];

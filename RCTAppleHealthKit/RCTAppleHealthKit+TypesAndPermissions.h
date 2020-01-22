@@ -11,6 +11,8 @@
 
 @interface RCTAppleHealthKit (TypesAndPermissions)
 
+- (NSSet *)getReadPermsFromOptions:(NSArray *)options;
+- (NSSet *)getWritePermsFromOptions:(NSArray *)options;
 - (NSSet *)getReadPerms;
 - (NSSet *)getWritePerms;
 - (NSDictionary *)readPermsDict;
