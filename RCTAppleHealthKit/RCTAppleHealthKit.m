@@ -1443,7 +1443,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
             else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierRestingHeartRate] ||
                      [type.identifier isEqualToString:HKQuantityTypeIdentifierVO2Max])
             {
-                hkReading = @{ @"h_id" : uuid,  
+                hkReading = @{ @"h_id" : uuid,
                                @"value" : [hkDict valueForKey:@"value"],
                                @"timestamp" : [hkDict valueForKey:@"startDate"],
                                @"unit" : [hkDict valueForKey:@"unit"],
@@ -1598,13 +1598,16 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                                             }
                                         }
                                        
-                                       // Ignore zero value heart rate records
+                                       // Ignore zero value heart rate, step count, active energy burned records
                                        bool addToArray = true;
-                                       if ([type.identifier isEqualToString:@"HKQuantityTypeIdentifierHeartRate"]) {
-                                           if (valueInt == 0) {
-                                               addToArray = false;
+                                        if (valueInt == 0) {
+                                           if ([type.identifier isEqualToString:HKQuantityTypeIdentifierHeartRate] ||
+                                               [type.identifier isEqualToString:HKQuantityTypeIdentifierStepCount] ||
+                                               [type.identifier isEqualToString:HKQuantityTypeIdentifierActiveEnergyBurned]) {
+                                                   addToArray = false;
+                                            
                                            }
-                                       }
+                                        }
                                        
                                        if (addToArray) {
                                            
