@@ -449,19 +449,25 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                                 
                 if(([key.identifier isEqualToString:HKQuantityTypeIdentifierHeartRate] ||
                    [key.identifier isEqualToString:HKQuantityTypeIdentifierStepCount] ||
-                    [key.identifier isEqualToString:HKQuantityTypeIdentifierActiveEnergyBurned]) &&
+                    [key.identifier isEqualToString:HKQuantityTypeIdentifierActiveEnergyBurned] ||
+                    [key.identifier isEqualToString:HKQuantityTypeIdentifierDietaryProtein] ||
+                    [key.identifier isEqualToString:HKQuantityTypeIdentifierDietaryCarbohydrates] ||
+                    [key.identifier isEqualToString:HKQuantityTypeIdentifierDietaryFatMonounsaturated] ||
+                    [key.identifier isEqualToString:HKQuantityTypeIdentifierDietaryFatPolyunsaturated] ||
+                    [key.identifier isEqualToString:HKQuantityTypeIdentifierDietaryFatSaturated] ||
+                    [key.identifier isEqualToString:HKQuantityTypeIdentifierDietaryFatTotal] ||
+                    [key.identifier isEqualToString:HKQuantityTypeIdentifierDietaryEnergyConsumed]) &&
                    allObjects.count > 0) {
                     
                     HKStatisticsOptions options;
                     
-                    if ([key.identifier isEqualToString:HKQuantityTypeIdentifierStepCount] ||
-                        [key.identifier isEqualToString:HKQuantityTypeIdentifierActiveEnergyBurned]) {
-                        options = HKStatisticsOptionCumulativeSum;
-                        interval.day = 1;  // steps
-                    }
-                    else {
+                    if ([key.identifier isEqualToString:HKQuantityTypeIdentifierHeartRate] ) {
                         options = HKStatisticsOptionDiscreteAverage | HKStatisticsOptionDiscreteMin | HKStatisticsOptionDiscreteMax;
                         interval.hour = 1;   // heart rate
+                    }
+                    else {
+                        options = HKStatisticsOptionCumulativeSum;
+                        interval.day = 1;  // steps
                     }
                     
                     NSDate *startDate;
@@ -1304,6 +1310,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
     for (NSDictionary *hkDict in healthKitArray) {
         
         uuid = [hkDict valueForKey:@"UUID"];
+        // Get the date string for values that are retrieved as a summary
         rangeOfString = [uuid rangeOfString:@"-healthkit2-"];
         if (rangeOfString.location != NSNotFound) {
             dateString = [uuid substringFromIndex:rangeOfString.location + rangeOfString.length];
@@ -1325,15 +1332,6 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                            @"min_value" : [hkDict valueForKey:@"min_value"],
                            @"max_value" : [hkDict valueForKey:@"max_value"]
                            };
-        }
-        else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierActiveEnergyBurned])
-        {
-            hkReading = @{ @"h_id" : uuid,
-            @"value" : [hkDict valueForKey:@"value"],
-            @"timestamp" : dateString,
-            @"unit" : [hkDict valueForKey:@"unit"],
-            @"device_name" : [hkDict valueForKey:@"source"],
-            };
         }
         else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierBodyMass])
         {
@@ -1393,30 +1391,95 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
             @"device_name" : [hkDict valueForKey:@"source"],
             };
         }
-        else if ([type.identifier isEqualToString:HKCategoryTypeIdentifierMindfulSession]) {
+        else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierDietaryProtein]) {
             hkReading = @{ @"h_id" : uuid,
-            @"timestamp" : [hkDict valueForKey:@"startDate"],
-            @"unit" : @"min",
+            @"protein" : [hkDict valueForKey:@"value"],
+            @"date" : dateString,
+            @"unit" : [hkDict valueForKey:@"unit"],
             @"device_name" : [hkDict valueForKey:@"source"],
-            @"minutes" : [hkDict valueForKey:@"minutes"],
             };
         }
-        else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierDietaryProtein] ||
-                 [type.identifier isEqualToString:HKQuantityTypeIdentifierDietaryCarbohydrates] ||
-                 [type.identifier isEqualToString:HKQuantityTypeIdentifierDietaryFatMonounsaturated] ||
-                 [type.identifier isEqualToString:HKQuantityTypeIdentifierDietaryFatPolyunsaturated] ||
-                 [type.identifier isEqualToString:HKQuantityTypeIdentifierDietaryFatSaturated] ||
-                 [type.identifier isEqualToString:HKQuantityTypeIdentifierDietaryFatTotal] ||
-                 [type.identifier isEqualToString:HKQuantityTypeIdentifierDietaryEnergyConsumed] ||
-                  [type.identifier isEqualToString:HKQuantityTypeIdentifierBodyFatPercentage] ||
-                 [type.identifier isEqualToString:HKQuantityTypeIdentifierOxygenSaturation] ||
-                 [type.identifier isEqualToString:HKQuantityTypeIdentifierRespiratoryRate] ||
-                 [type.identifier isEqualToString:HKQuantityTypeIdentifierBasalBodyTemperature]
-                 ) {
+        else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierDietaryFatMonounsaturated]) {
+            hkReading = @{ @"h_id" : uuid,
+            @"monounsaturated_fat" : [hkDict valueForKey:@"value"],
+            @"date" : dateString,
+            @"unit" : [hkDict valueForKey:@"unit"],
+            @"device_name" : [hkDict valueForKey:@"source"],
+            };
+        }
+        else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierDietaryFatPolyunsaturated]) {
+            hkReading = @{ @"h_id" : uuid,
+            @"polyunsaturated_fat" : [hkDict valueForKey:@"value"],
+            @"date" : dateString,
+            @"unit" : [hkDict valueForKey:@"unit"],
+            @"device_name" : [hkDict valueForKey:@"source"],
+            };
+        }
+        else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierDietaryFatSaturated]) {
+            hkReading = @{ @"h_id" : uuid,
+            @"polyunsaturated_fat" : [hkDict valueForKey:@"value"],
+            @"date" : dateString,
+            @"unit" : [hkDict valueForKey:@"unit"],
+            @"device_name" : [hkDict valueForKey:@"source"],
+            };
+        }
+        else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierDietaryFatTotal]) {
+            hkReading = @{ @"h_id" : uuid,
+            @"fat" : [hkDict valueForKey:@"value"],
+            @"date" : dateString,
+            @"unit" : [hkDict valueForKey:@"unit"],
+            @"device_name" : [hkDict valueForKey:@"source"],
+            };
+        }
+        else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierDietaryCarbohydrates]) {
+            hkReading = @{ @"h_id" : uuid,
+            @"carbohydrate" : [hkDict valueForKey:@"value"],
+            @"date" : dateString,
+            @"unit" : [hkDict valueForKey:@"unit"],
+            @"device_name" : [hkDict valueForKey:@"source"],
+            };
+        }
+        else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierDietaryEnergyConsumed]) {
+            hkReading = @{ @"h_id" : uuid,
+            @"calories" : [hkDict valueForKey:@"value"],
+            @"date" : dateString,
+            @"unit" : [hkDict valueForKey:@"unit"],
+            @"device_name" : [hkDict valueForKey:@"source"],
+            };
+        }
+        else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierBodyFatPercentage] ||
+        [type.identifier isEqualToString:HKQuantityTypeIdentifierOxygenSaturation] ||
+        [type.identifier isEqualToString:HKQuantityTypeIdentifierRespiratoryRate]) {
             hkReading = @{ @"h_id" : uuid,
             @"value" : [hkDict valueForKey:@"value"],
             @"timestamp" : [hkDict valueForKey:@"startDate"],
-            @"unit" : [hkDict valueForKey:@"unit"],
+            @"device_name" : [hkDict valueForKey:@"source"],
+            };
+        }
+        else if ([type.identifier isEqualToString:HKCategoryTypeIdentifierMindfulSession]) {
+            hkReading = @{ @"h_id" : uuid,
+            @"value" : [hkDict valueForKey:@"minutes"],
+            @"timestamp" : [hkDict valueForKey:@"startDate"],
+            @"unit" : @"min",
+            @"device_name" : [hkDict valueForKey:@"source"],
+            };
+        }
+        else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierActiveEnergyBurned])
+        {
+            hkReading = @{ @"h_id" : uuid,
+            @"calories" : [hkDict valueForKey:@"value"],
+            @"date" : dateString,
+            @"device_name" : [hkDict valueForKey:@"source"],
+            };
+        }
+        else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierBasalBodyTemperature])
+        {
+            // Convert HK unit to HeadsUp unit
+            NSString *unit = [(NSString *)[hkDict valueForKey:@"unit"] isEqualToString:@"degC"] ? @"celsius" : @"fahrenheit";
+            hkReading = @{ @"h_id" : uuid,
+            @"value" : [hkDict valueForKey:@"value"],
+            @"timestamp" : [hkDict valueForKey:@"startDate"],
+            @"unit" : unit,
             @"device_name" : [hkDict valueForKey:@"source"],
             };
         }
@@ -1425,8 +1488,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
             {
                 hkReading = @{ @"h_id" : uuid,
                 @"value" : [hkDict valueForKey:@"value"],
-                @"startDate" : [hkDict valueForKey:@"startDate"],
-                @"endDate" : [hkDict valueForKey:@"endDate"],
+                @"timestamp" : [hkDict valueForKey:@"startDate"],
                 @"unit" : [hkDict valueForKey:@"unit"],
                 @"device_name" : [hkDict valueForKey:@"source"],
                 };
@@ -1434,19 +1496,33 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
             else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierWaistCircumference])
             {
                 hkReading = @{ @"h_id" : uuid,
-                @"value" : [hkDict valueForKey:@"value"],
+                @"waist_at_belly_button" : [hkDict valueForKey:@"value"],
                 @"timestamp" : [hkDict valueForKey:@"startDate"],
                 @"unit" : [hkDict valueForKey:@"unit"],
                 @"device_name" : [hkDict valueForKey:@"source"],
                 };
             }
-            else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierRestingHeartRate] ||
-                     [type.identifier isEqualToString:HKQuantityTypeIdentifierVO2Max])
+            else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierVO2Max])
             {
                 hkReading = @{ @"h_id" : uuid,
                                @"value" : [hkDict valueForKey:@"value"],
                                @"timestamp" : [hkDict valueForKey:@"startDate"],
-                               @"unit" : [hkDict valueForKey:@"unit"],
+                               @"device_name" : [hkDict valueForKey:@"source"],
+                               };
+            }
+            else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierRestingHeartRate])
+            {
+                NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+                [dateFormatter setDateFormat:@"yyyy-MM-dd"];
+                NSString *timeStampString = [hkDict valueForKey:@"startTimestamp"];
+                double timeStampValue = [timeStampString doubleValue] ;
+                NSTimeInterval timeStampInterval = (NSTimeInterval)timeStampValue;
+                NSDate *timeStampDate = [NSDate dateWithTimeIntervalSince1970:timeStampInterval];
+                dateString = [dateFormatter stringFromDate:timeStampDate];
+                
+                hkReading = @{ @"h_id" : uuid,
+                               @"value" : [hkDict valueForKey:@"value"],
+                               @"date" : dateString,
                                @"device_name" : [hkDict valueForKey:@"source"],
                                };
             }
@@ -1515,11 +1591,9 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         }
         
         __block NSString *dateString;
+        __block bool useDoubleValue;
 
         NSLog(@"00xxxc10b queryForQuantitySummary() type: %@ fromDate: %@, toDate: %@", type.identifier, fromDate, toDate);
-        
-//        NSDate *enumFromDate = [dateFormatter dateFromString:fromDate];
-//        NSDate *enumToDate = [dateFormatter dateFromString:toDate];
         
         [results enumerateStatisticsFromDate:fromDate
                                       toDate:toDate
@@ -1571,47 +1645,70 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                                                 [type.identifier isEqualToString:HKQuantityTypeIdentifierFlightsClimbed]) {
                                            valueDouble = [qtyVal doubleValueForUnit:[HKUnit unitFromString:@"count"]];
                                        }
-                                       else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierActiveEnergyBurned]) {
+                                       else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierActiveEnergyBurned] ||
+                                                 [type.identifier isEqualToString:HKQuantityTypeIdentifierDietaryEnergyConsumed]) {
                                            valueDouble = [qtyVal doubleValueForUnit:[HKUnit kilocalorieUnit]];
                                        }
+                                        else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierDietaryProtein] ||
+                                        [type.identifier isEqualToString:HKQuantityTypeIdentifierDietaryCarbohydrates] ||
+                                        [type.identifier isEqualToString:HKQuantityTypeIdentifierDietaryFatMonounsaturated] ||
+                                        [type.identifier isEqualToString:HKQuantityTypeIdentifierDietaryFatPolyunsaturated] ||
+                                        [type.identifier isEqualToString:HKQuantityTypeIdentifierDietaryFatSaturated] ||
+                                        [type.identifier isEqualToString:HKQuantityTypeIdentifierDietaryFatTotal] ) {
+                                            valueDouble = [qtyVal doubleValueForUnit:[HKUnit gramUnit]];
+                                            if (valueDouble >= 1) {
+                                                valueDouble = roundf(10 * valueDouble) / 10.0;
+                                            }
+                                            else if (valueDouble != 0) {
+                                                valueDouble = roundf(100 * valueDouble) / 100.0;
+                                            }
+                                            useDoubleValue = true;
+                                        }
                                        else {
                                            valueDouble = [qtyVal doubleValueForUnit:unit];
                                        }
-                                       
-                                        if ([type.identifier isEqualToString:HKQuantityTypeIdentifierActiveEnergyBurned]) {
-                                            valueInt = floorf(valueDouble);
-                                        }
-                                        else {
-                                            valueInt = (int)lroundf(valueDouble);
-                                            
-                                            // Added this code to try and match Apple's statistical rounding
-                                            // It's better, but not 100% yet
-                                            valueFloor = floorf(valueDouble);
-                                            if (valueInt != valueFloor) {  // TODO: Test this
-                                                NSNumber *doubleNumber = [NSNumber numberWithDouble:(valueDouble)];
-                                                NSString *doubleString = [doubleNumber stringValue];
-                                                if ([doubleString containsString:@".5"]) {
-                                                    if (valueInt % 2) {
-                                                        valueInt--;
+                                     
+                                        // Ignore zero value heart rate, step count, active energy burned records
+                                        bool addToArray = true;
+                                        if (!useDoubleValue) {
+                                            if ([type.identifier isEqualToString:HKQuantityTypeIdentifierActiveEnergyBurned]) {
+                                                valueInt = floorf(valueDouble);
+                                            }
+                                            else {
+                                                valueInt = (int)lroundf(valueDouble);
+                                                
+                                                // Added this code to try and match Apple's statistical rounding
+                                                // It's better, but not 100% yet
+                                                valueFloor = floorf(valueDouble);
+                                                if (valueInt != valueFloor) {  // TODO: Test this
+                                                    NSNumber *doubleNumber = [NSNumber numberWithDouble:(valueDouble)];
+                                                    NSString *doubleString = [doubleNumber stringValue];
+                                                    if ([doubleString containsString:@".5"]) {
+                                                        if (valueInt % 2) {
+                                                            valueInt--;
+                                                        }
                                                     }
                                                 }
                                             }
+
+                                            if (valueInt == 0) {
+                                                addToArray = false;
+                                            }
                                         }
-                                       
-                                       // Ignore zero value heart rate, step count, active energy burned records
-                                       bool addToArray = true;
-                                        if (valueInt == 0) {
-                                           if ([type.identifier isEqualToString:HKQuantityTypeIdentifierHeartRate] ||
-                                               [type.identifier isEqualToString:HKQuantityTypeIdentifierStepCount] ||
-                                               [type.identifier isEqualToString:HKQuantityTypeIdentifierActiveEnergyBurned]) {
-                                                   addToArray = false;
-                                            
-                                           }
+                                        else {
+                                            if (valueDouble == 0) {
+                                                addToArray = false;
+                                            }
                                         }
-                                       
+            
                                        if (addToArray) {
                                            
-                                           [dict setValue:[NSNumber numberWithInteger:valueInt] forKey:@"value"];
+                                           if (useDoubleValue) {
+                                               [dict setValue:[NSNumber numberWithDouble:valueDouble] forKey:@"value"];
+                                           }
+                                           else {
+                                              [dict setValue:[NSNumber numberWithInteger:valueInt] forKey:@"value"];
+                                           }
                                            
                                            dateString = [dateFormatter stringFromDate:result.startDate];
                                            
