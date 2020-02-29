@@ -1393,7 +1393,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         }
         else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierDietaryProtein]) {
             hkReading = @{ @"h_id" : uuid,
-            @"protein" : [hkDict valueForKey:@"value"],
+            @"value" : [hkDict valueForKey:@"value"],
             @"date" : dateString,
             @"unit" : [hkDict valueForKey:@"unit"],
             @"device_name" : [hkDict valueForKey:@"source"],
@@ -1401,7 +1401,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         }
         else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierDietaryFatMonounsaturated]) {
             hkReading = @{ @"h_id" : uuid,
-            @"monounsaturated_fat" : [hkDict valueForKey:@"value"],
+            @"value" : [hkDict valueForKey:@"value"],
             @"date" : dateString,
             @"unit" : [hkDict valueForKey:@"unit"],
             @"device_name" : [hkDict valueForKey:@"source"],
@@ -1409,7 +1409,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         }
         else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierDietaryFatPolyunsaturated]) {
             hkReading = @{ @"h_id" : uuid,
-            @"polyunsaturated_fat" : [hkDict valueForKey:@"value"],
+            @"value" : [hkDict valueForKey:@"value"],
             @"date" : dateString,
             @"unit" : [hkDict valueForKey:@"unit"],
             @"device_name" : [hkDict valueForKey:@"source"],
@@ -1417,7 +1417,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         }
         else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierDietaryFatSaturated]) {
             hkReading = @{ @"h_id" : uuid,
-            @"polyunsaturated_fat" : [hkDict valueForKey:@"value"],
+            @"value" : [hkDict valueForKey:@"value"],
             @"date" : dateString,
             @"unit" : [hkDict valueForKey:@"unit"],
             @"device_name" : [hkDict valueForKey:@"source"],
@@ -1425,7 +1425,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         }
         else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierDietaryFatTotal]) {
             hkReading = @{ @"h_id" : uuid,
-            @"fat" : [hkDict valueForKey:@"value"],
+            @"value" : [hkDict valueForKey:@"value"],
             @"date" : dateString,
             @"unit" : [hkDict valueForKey:@"unit"],
             @"device_name" : [hkDict valueForKey:@"source"],
@@ -1433,7 +1433,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         }
         else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierDietaryCarbohydrates]) {
             hkReading = @{ @"h_id" : uuid,
-            @"carbohydrate" : [hkDict valueForKey:@"value"],
+            @"value" : [hkDict valueForKey:@"value"],
             @"date" : dateString,
             @"unit" : [hkDict valueForKey:@"unit"],
             @"device_name" : [hkDict valueForKey:@"source"],
@@ -1441,7 +1441,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         }
         else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierDietaryEnergyConsumed]) {
             hkReading = @{ @"h_id" : uuid,
-            @"calories" : [hkDict valueForKey:@"value"],
+            @"value" : [hkDict valueForKey:@"value"],
             @"date" : dateString,
             @"unit" : [hkDict valueForKey:@"unit"],
             @"device_name" : [hkDict valueForKey:@"source"],
