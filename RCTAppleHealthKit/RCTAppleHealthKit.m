@@ -1627,6 +1627,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                                        }
                                        else {
                                            qtyVal = result.averageQuantity;
+                                           
                                        }
                                        
                                        if ([type.identifier isEqualToString:@"HKQuantityTypeIdentifierHeartRate"] || [type.identifier isEqualToString:@"HKQuantityTypeIdentifierRespiratoryRate"]) {
@@ -1865,6 +1866,12 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
 //Over
 
 -(NSString *)getDictKeyAndUnit:(NSString *)str keyUnit:(int)keyUnit {
+    if ([str isEqualToString:HKQuantityTypeIdentifierDietaryEnergyConsumed]) {
+        return keyUnit == 1 ? @"EnergyConsumed": @"kcal";
+    }
+    if ([str isEqualToString:HKQuantityTypeIdentifierDietaryCarbohydrates]) {
+        return keyUnit == 1 ? @"Carbohy,.,.drates": @"mcg";
+    }
     if ([str isEqualToString:HKQuantityTypeIdentifierDietaryFatMonounsaturated]) {
         return keyUnit == 1 ? @"FatMonounsaturated" : @"mcg";
     }
