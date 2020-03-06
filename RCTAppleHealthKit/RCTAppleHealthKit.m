@@ -511,6 +511,10 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                     [self processHealthKitResult:allObjects
                                   deletedObjects:deletedObjects
                                         callback:callback key:key typesCount:types.count anchor:anchor];
+                    
+                    // MEMORY:
+                    allObjects = nil;
+                    deletedObjects = nil;
                 }
             }];
         }
@@ -920,6 +924,10 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                               
                               NSMutableArray *arrayAdded = [self createReadingsDictionaryFromArray:results type:type unit:unit];
                               NSMutableArray *arrayDeleted = [arrDeleted mutableCopy];
+                              
+                              // MEMORY: Clear the arrays
+                              results = nil;
+                              arrDeleted = nil;
 
                               // Call the completion handler
                               completion(arrayAdded, arrayDeleted, nil, anchor);
@@ -1082,12 +1090,6 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                 strUnit = [self getDictKeyAndUnit:qtyTypeIdentifier keyUnit:2];
             }
             
-            
-//            if ([type.identifier isEqualToString:HKQuantityTypeIdentifierHeartRate] || [type.identifier isEqualToString:HKQuantityTypeIdentifierRespiratoryRate]) {
-//             if ([strUnit isEqualToString:@"count/min"]) {
-//                 doubleValue = [qtyVal doubleValueForUnit:[HKUnit unitFromString:@"count/min"]];
-//            }
-//            else
             if ([type.identifier isEqualToString:HKQuantityTypeIdentifierBodyMassIndex]) {
                 doubleValue = [qtyVal doubleValueForUnit:[HKUnit unitFromString:@"count"]];
             }
@@ -1171,6 +1173,10 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         }
         
         //NSLog(@"dict:%@",dict);
+        
+        // MEMORY:
+        results = nil;
+        
         [arr addObject:dict];
     }
     return arr;
@@ -1182,18 +1188,25 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
 -(void)processHealthKitResult:(NSArray *)allObjects
                deletedObjects:(NSArray *)deletedObjects callback:(RCTResponseSenderBlock)callback key:(HKQuantityType *)key typesCount:(NSUInteger)typesCount anchor:(HKQueryAnchor *)anchor
 {
+    NSMutableArray *jsonArray;
+    
     if (allObjects.count > 0) {
         // Sort newest to oldest
         NSSortDescriptor *descriptor = [[NSSortDescriptor alloc] initWithKey:@"startTimestamp" ascending:NO];
         allObjects = [allObjects sortedArrayUsingDescriptors:@[descriptor]];
         
-        NSMutableArray *jsonArray = [self buildJSONArrayFromHealthKitArray:allObjects type:key];
+        jsonArray = [self buildJSONArrayFromHealthKitArray:allObjects type:key];
         [self.jsonObject setObject:jsonArray forKey:key.identifier];
     }
     
     if (deletedObjects.count > 0) {
         [self.jsonDeletedObject setObject:deletedObjects forKey:key.identifier];
     }
+    
+    // MEMORY:
+    allObjects = nil;
+    deletedObjects = nil;
+    jsonArray = nil;
     
     // Add the anchor object to the list of anchors to be dropped (saved)
     // for use in the next query so only records newer than the anchor are returned
@@ -1265,6 +1278,9 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
             NSMutableArray *array = [(NSArray *)[jsonOverflowObject objectForKey:key] mutableCopy];
             NSLog(@"11xxx05. callBackHealthKitResults() jsonObject overflow array count: %i", (int)array.count);
             [self.jsonObject setValue:array forKey:key];
+            
+            // MEMORY:
+            array = nil;
         }
         
         for (HKQuantityType *key in jsonOverflowObject) {
@@ -1294,6 +1310,12 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
             
             self.wasBackgroundUploadInProgress = true;
         }
+        
+        // MEMORY:
+        self.jsonCallbackObject = nil;
+        self.jsonDeletedObject = nil;
+        jsonOverflowObject = nil;
+        
         callback(@[@[jsonFinalObject], [NSNull null]]);
     }
 }
