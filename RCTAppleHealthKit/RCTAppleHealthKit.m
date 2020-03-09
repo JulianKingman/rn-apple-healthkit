@@ -993,6 +993,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
             if (predicate != nil) {
                 newAnchor = nil;
             }
+            
             completion(sampleObjects, arrUUID, error, newAnchor);
         }];
     
@@ -1174,11 +1175,11 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         
         //NSLog(@"dict:%@",dict);
         
-        // MEMORY:
-        results = nil;
-        
         [arr addObject:dict];
     }
+    
+    // MEMORY:
+    results = nil;
     return arr;
 }
 
