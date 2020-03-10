@@ -446,6 +446,11 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
             [self queryForUpdates:key predicate:predicate completion:^(NSArray * allObjects, NSArray * deletedObjects, NSError * error, HKQueryAnchor *anchor) {
                 
                 NSDateComponents *interval = [[NSDateComponents alloc] init];
+                
+                if (allObjects.count > 0) {
+                    int x = 1;
+                    x++;
+                }
                                 
                 if(([key.identifier isEqualToString:HKQuantityTypeIdentifierHeartRate] ||
                    [key.identifier isEqualToString:HKQuantityTypeIdentifierStepCount] ||
@@ -1547,6 +1552,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                                @"value" : [hkDict valueForKey:@"value"],
                                @"date" : dateString,
                                @"device_name" : [hkDict valueForKey:@"source"],
+                               @"unit" : [hkDict valueForKey:@"unit"],
                                };
             }
         }
