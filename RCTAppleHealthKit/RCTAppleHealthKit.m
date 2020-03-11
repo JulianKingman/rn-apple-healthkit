@@ -446,12 +446,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
             [self queryForUpdates:key predicate:predicate completion:^(NSArray * allObjects, NSArray * deletedObjects, NSError * error, HKQueryAnchor *anchor) {
                 
                 NSDateComponents *interval = [[NSDateComponents alloc] init];
-                
-                if (allObjects.count > 0) {
-                    int x = 1;
-                    x++;
-                }
-                                
+                          
                 if(([key.identifier isEqualToString:HKQuantityTypeIdentifierHeartRate] ||
                    [key.identifier isEqualToString:HKQuantityTypeIdentifierStepCount] ||
                     [key.identifier isEqualToString:HKQuantityTypeIdentifierActiveEnergyBurned] ||
@@ -493,6 +488,10 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                         endDate = [dateFormatter dateFromString: endDateString];
                     }
                     
+                    // MEMORY:
+                    allObjects = nil;
+                    deletedObjects = nil;
+                    
                     // Get a summary instead
                     [self queryForQuantitySummary:key
                                              unit:[HKUnit countUnit]
@@ -509,6 +508,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                                            [self processHealthKitResult:allObjects
                                                          deletedObjects:emptyDeletedObjects
                                                                callback:callback key:key typesCount:types.count anchor:anchor];
+                        
                                        }];
                 }
                 else
@@ -927,7 +927,8 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                           // Completion handler called from HKAnchoredObjectQuery
                           if(results) {
                               
-                              NSMutableArray *arrayAdded = [self createReadingsDictionaryFromArray:results type:type unit:unit];
+                              // Stores result into self.readingsArray
+                              [self createReadingsDictionaryFromArray:results type:type unit:unit];
                               NSMutableArray *arrayDeleted = [arrDeleted mutableCopy];
                               
                               // MEMORY: Clear the arrays
@@ -935,7 +936,11 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                               arrDeleted = nil;
 
                               // Call the completion handler
-                              completion(arrayAdded, arrayDeleted, nil, anchor);
+                              completion(self.readingsArray, arrayDeleted, nil, anchor);
+                              
+                              // MEMORY:
+                              self.readingsArray = nil;
+                              arrayDeleted = nil;
                           }
                           else {
                               NSLog(@"Error fetching samples from HealthKit: %@", error);
@@ -1000,6 +1005,9 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
             }
             
             completion(sampleObjects, arrUUID, error, newAnchor);
+            // MEMORY:
+            sampleObjects = nil;
+            arrUUID = nil;
         }];
     
     NSLog(@"00xxxc9 fetchIndividualRecords() execute query");
@@ -1008,10 +1016,10 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
     
 }
 
--(NSMutableArray *)createReadingsDictionaryFromArray:(NSArray *)results type:(HKQuantityType *)type unit:(HKUnit *)unit
+-(void)createReadingsDictionaryFromArray:(NSArray *)results type:(HKQuantityType *)type unit:(HKUnit *)unit
 {
     // Create an array of dictionary objects from the query results
-    NSMutableArray *arr = [[NSMutableArray alloc] init];
+    self.readingsArray = [[NSMutableArray alloc] init];
     NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
     [dateFormatter setDateFormat:@"yyyy-MM-dd'T'HH:mm"];
     HKQuantityType *systolicType = [HKQuantityType quantityTypeForIdentifier:HKQuantityTypeIdentifierBloodPressureSystolic];
@@ -1180,12 +1188,12 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         
         //NSLog(@"dict:%@",dict);
         
-        [arr addObject:dict];
+        [self.readingsArray addObject:dict];
     }
     
     // MEMORY:
     results = nil;
-    return arr;
+    //return arr;
 }
 
 
@@ -1760,7 +1768,13 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                                        }
                                    }];
         
+        // MEMORY:
+        results = nil;
+        
         completion(arr, nil);
+        
+        // MEMORY:
+        arr = nil;
     };
     
     [self.healthStore executeQuery:query];
