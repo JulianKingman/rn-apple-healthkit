@@ -341,7 +341,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
 
 -(void)upgradeAnchorsWithUserId:(NSString *)userId
 {
-        // Make sure the userid is stored in all anchors
+        // Make sure the userId is stored in all anchors
         if ([[NSUserDefaults standardUserDefaults] valueForKey:@"anchorsContainUserId"] == nil) {
         
             for (id key in self.readPermsDict) {
@@ -370,7 +370,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
 -(void)dropHealthKitAnchors:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback {
     
     // See if a user was specified
-    NSString *userId = [input objectForKey:@"userid"];
+    NSString *userId = [input objectForKey:@"userId"];
     if (userId == nil) {
         userId = DEFAULT_USER_ID;
     }
@@ -405,7 +405,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
 {
     // See if a specific anchor was specified
     NSString *anchorKey = [input objectForKey:@"anchorKey"];
-    NSString *userId = [input objectForKey:@"userid"];
+    NSString *userId = [input objectForKey:@"userId"];
     if (userId == nil) {
         userId = DEFAULT_USER_ID;
     }
@@ -475,7 +475,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         return;
     }
     
-    self.userId = [input objectForKey:@"userid"];
+    self.userId = [input objectForKey:@"userId"];
     if (self.userId.length == 0) {
         self.userId = DEFAULT_USER_ID;
     }
@@ -574,7 +574,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                                           endDate:endDate
                                          interval:interval
                                           options:options
-                                           userid:self.userId
+                                           userId:self.userId
                                        completion:^(NSArray * allObjects, NSError *error) {
                                            
                                             // TODO: Check out alternative ways of tracking deleted records for summary
@@ -1668,7 +1668,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                        endDate:(NSDate *)endDate
                       interval:(NSDateComponents *)interval
                        options:(HKStatisticsOptions)options
-                        userid:(NSString *)userid
+                        userId:(NSString *)userId
                     completion:(void (^)(NSArray *,NSError *))completion
 {
     NSCalendar *calendar = [NSCalendar currentCalendar];
@@ -1842,7 +1842,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                                            
                                            dateString = [dateFormatter stringFromDate:result.startDate];
                                            
-                                           NSString *strUUID = [NSString stringWithFormat:@"%@-healthkit2-%@", userid, dateString];
+                                           NSString *strUUID = [NSString stringWithFormat:@"%@-healthkit2-%@", userId, dateString];
                                            [dict setValue:strUUID forKey:@"UUID"];
 
                                            
