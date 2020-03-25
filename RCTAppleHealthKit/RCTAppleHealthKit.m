@@ -1413,9 +1413,6 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
             self.jsonDeletedObject = nil;
             jsonOverflowObject = nil;
             
-            // TEMP
-            jsonFinalObject = [[NSMutableDictionary alloc] init];
-            
             callback(@[@[jsonFinalObject], [NSNull null]]);
             jsonFinalObject = nil;
         }
