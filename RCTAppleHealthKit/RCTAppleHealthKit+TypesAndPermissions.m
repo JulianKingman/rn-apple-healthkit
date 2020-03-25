@@ -315,7 +315,6 @@
 
 
 // Returns HealthKit read permissions from options array
-// Not used any more
 - (NSSet *)getReadPermsFromOptions:(NSArray *)options {
     NSDictionary *readPermDict = [self readPermsDict];
     NSMutableSet *readPermSet = [NSMutableSet setWithCapacity:1];

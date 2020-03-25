@@ -25,6 +25,8 @@
 @property (nonatomic) bool wasBackgroundUploadInProgress;
 @property (nonatomic) __block int typeCount;
 @property (nonatomic) NSMutableArray *readingsArray;
+@property (nonatomic) NSString *userId;
+
 - (void)isHealthKitAvailable:(RCTResponseSenderBlock)callback;
 - (void)initializeHealthKit:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback;
 - (void)getModuleInfo:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback;
