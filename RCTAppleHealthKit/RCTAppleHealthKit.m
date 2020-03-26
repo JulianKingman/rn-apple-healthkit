@@ -823,6 +823,11 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
             completion(results, arrDeleted, error, anchor);
         }];
     }
+    else if ([str isEqualToString:HKQuantityTypeIdentifierBodyTemperature]) {
+        [self getIndividualRecords:type unit:[HKUnit degreeFahrenheitUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+            completion(results, arrDeleted, error, anchor);
+        }];
+    }
     else if ([str isEqualToString:HKQuantityTypeIdentifierBasalEnergyBurned]) {//DONE
         [self getIndividualRecords:type unit:[HKUnit kilocalorieUnit] predicate:predicate completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
             completion(results, arrDeleted, error, anchor);
@@ -1596,6 +1601,17 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                 };
             }
             else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierBasalBodyTemperature])
+            {
+                // Convert HK unit to HeadsUp unit
+                NSString *unit = [(NSString *)[hkDict valueForKey:@"unit"] isEqualToString:@"degC"] ? @"celsius" : @"fahrenheit";
+                hkReading = @{ @"h_id" : uuid,
+                @"value" : [hkDict valueForKey:@"value"],
+                @"timestamp" : [hkDict valueForKey:@"startDate"],
+                @"unit" : unit,
+                @"device_name" : [hkDict valueForKey:@"source"],
+                };
+            }
+            else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierBodyTemperature])
             {
                 // Convert HK unit to HeadsUp unit
                 NSString *unit = [(NSString *)[hkDict valueForKey:@"unit"] isEqualToString:@"degC"] ? @"celsius" : @"fahrenheit";
