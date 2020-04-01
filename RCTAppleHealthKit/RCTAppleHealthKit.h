@@ -21,11 +21,10 @@
 @property (nonatomic) NSMutableDictionary *jsonCallbackObject;
 @property (nonatomic) NSMutableDictionary *jsonDeletedCallbackObject;
 @property (nonatomic) NSMutableDictionary *anchorsToDrop;
-@property (nonatomic) bool isBackgroundUploadInProgress;
-@property (nonatomic) bool wasBackgroundUploadInProgress;
-@property (nonatomic) __block int typeCount;
 @property (nonatomic) NSMutableArray *readingsArray;
 @property (nonatomic) NSString *userId;
+@property (nonatomic) NSMutableArray *allTypesToProcess;
+
 
 - (void)isHealthKitAvailable:(RCTResponseSenderBlock)callback;
 - (void)initializeHealthKit:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback;

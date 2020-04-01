@@ -318,11 +318,23 @@
 - (NSSet *)getReadPermsFromOptions:(NSArray *)options {
     NSDictionary *readPermDict = [self readPermsDict];
     NSMutableSet *readPermSet = [NSMutableSet setWithCapacity:1];
+    bool bloodPressureMetric = false;
     
     for(int i=0; i<[options count]; i++) {
         NSString *optionKey = options[i];
         HKObjectType *val = [readPermDict objectForKey:optionKey];
         if(val != nil) {
+            
+            // NOTE: Only leave one blood pressure metric since there is only one in HealthKit
+            if ([val.identifier isEqualToString:HKQuantityTypeIdentifierBloodPressureDiastolic] ||
+                [val.identifier isEqualToString:HKQuantityTypeIdentifierBloodPressureSystolic]) {
+                
+                if (bloodPressureMetric) {
+                    continue;
+                }
+                bloodPressureMetric = true;
+            }
+
             [readPermSet addObject:val];
         }
     }

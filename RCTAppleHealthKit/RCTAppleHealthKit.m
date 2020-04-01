@@ -26,7 +26,6 @@
 @implementation RCTAppleHealthKit
 @synthesize bridge = _bridge;
 
-const int MAX_RECORDS = 500;
 NSString * const NEW_ANCHOR = @"newAnchor";
 NSString * const DEFAULT_USER_ID = @"default";
 
@@ -321,24 +320,6 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
     return newDate;
 }
 
--(void)readHealthKitDataByDate:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback {
-    // Check if a start and end date was passed
-    NSString *startDateString = [input objectForKey:@"fromDate"];
-    NSString *endDateString = [input objectForKey:@"toDate"];
-    NSDate *startDate;
-    NSDate *endDate;
-    NSPredicate *predicate;
-    
-    if (startDateString && endDateString) {
-        NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
-        [dateFormatter setDateFormat:@"yyyy-MM-dd"];
-        startDate = [dateFormatter dateFromString:startDateString];
-        endDate = [dateFormatter dateFromString:endDateString];
-        predicate = [HKQuery predicateForSamplesWithStartDate:startDate endDate:endDate options:HKQueryOptionNone];
-    }
-    [self readHealthKitData:input predicate:predicate callback:callback];
-}
-
 -(void)upgradeAnchorsWithUserId:(NSString *)userId
 {
         // Make sure the userId is stored in all anchors
@@ -455,150 +436,163 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
     [self deleteCustomObjectWithKey:[NSString stringWithFormat:@"%@%@%@", NEW_ANCHOR, typeIdentifier, userId]];
 }
 
+-(void)readHealthKitDataByDate:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback {
+    // Check if a start and end date was passed
+    NSString *startDateString = [input objectForKey:@"fromDate"];
+    NSString *endDateString = [input objectForKey:@"toDate"];
+    NSDate *startDate;
+    NSDate *endDate;
+    NSPredicate *predicate;
+    
+    if (startDateString && endDateString) {
+        NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+        [dateFormatter setDateFormat:@"yyyy-MM-dd"];
+        startDate = [dateFormatter dateFromString:startDateString];
+        endDate = [dateFormatter dateFromString:endDateString];
+        predicate = [HKQuery predicateForSamplesWithStartDate:startDate endDate:endDate options:HKQueryOptionNone];
+    }
+    [self readHealthKitData:input predicate:predicate callback:callback];
+}
+
+// Reads Health Kit Data
+// This method is called from JS with a full list of metrics to be read
+// and that full list is stored in the allTypesToProcess array
+// This method processes one metric at a time and hands the results back across the bridge,
+// then it removes the metric from allTypesToProcess.
+// JS calls the method again, and the next metric in allTypesToProcess is processed.
+// This cycle continues until all the metrics in allTypesToProcess is empty, then a
+// null value is sent back across the bridge, indicating all metrics are completed
 -(void)readHealthKitData:(NSDictionary *    )input predicate:(NSPredicate *)predicate callback:(RCTResponseSenderBlock)callback {
     
-    NSLog(@"11xxx01 readHealthKitData isBackgroundUploadInProgress: %s", self.isBackgroundUploadInProgress ? "true" : "false");
-    
-    // Don't get new data until all previous data is processed
-    if (self.isBackgroundUploadInProgress) {
-        self.jsonDeletedObject = [[NSMutableDictionary alloc] init]; // Clear since processed all at once
-        self.jsonObject = nil;
-        [self callBackHealthKitResults:callback];
-        return;
-    }
-    else if(self.wasBackgroundUploadInProgress) {
-        self.wasBackgroundUploadInProgress = false;
-        self.jsonDeletedObject = [[NSMutableDictionary alloc] init];    // Clear since processed all at once
-        self.jsonObject = nil;
-        // return a null to indicate background download complete
-        callback(@[[NSNull null], [NSNull null]]);
-        return;
-    }
-    
+    NSArray *readPermsArray = [input objectForKey:@"permissions"];
+    NSSet *allTypesSet = [self getReadPermsFromOptions:readPermsArray];
+    NSMutableArray *allTypes = [NSMutableArray arrayWithArray:[allTypesSet allObjects]];
     self.userId = [input objectForKey:@"userId"];
     if (self.userId.length == 0) {
         self.userId = DEFAULT_USER_ID;
     }
-    NSArray *readPermsArray = [input objectForKey:@"permissions"];
-    NSSet* types = [self getReadPermsFromOptions:readPermsArray];
+    
+    // If this is the first time through, allTypesToProcess will be nil,
+    // so store allTypes in allTypesToProcess
+    if (self.allTypesToProcess == nil) {
+        self.allTypesToProcess = allTypes;
+        // Clear all anchors to be dropped
+        self.anchorsToDrop = [[NSMutableDictionary alloc] init];
+    }
+    else if (self.allTypesToProcess.count == 0)
+    {
+        // If there are no more types to process, we're done with this cycle
+        self.allTypesToProcess = nil;
+        // return a null to indicate background download complete
+        callback(@[[NSNull null], [NSNull null]]);
+        return;
+    }
     
     // Upgrade the anchors if necessary
     [self upgradeAnchorsWithUserId:self.userId];
     
     self.jsonObject = [[NSMutableDictionary alloc] init];
     self.jsonDeletedObject = [[NSMutableDictionary alloc] init];
-    self.anchorsToDrop = [[NSMutableDictionary alloc] init];
     
     HKQuantityType *key;
-    self.typeCount = 0;
-    bool bloodPressureRetrieved = false;
     
-    for (key in types)
-    {
-        NSLog(@"01xxxa. readHealthKitData() key: %@", ((HKQuantityType *)key).identifier);
-        
-        bool isFirstQueryForType = true;
-        
-        // If there is no anchor object for this key, it's the first time through
-        if (predicate != nil ||
-            [self getAnchorWithTypeIdentifierForUserId:key.identifier userId:self.userId] != nil) {
-            isFirstQueryForType = false;
-        }
-        
-        if ([key isKindOfClass:HKSampleType.class]) {
-            
-            // Note if either of the blood pressure components has already been processed
-            if ([key.identifier isEqualToString:HKQuantityTypeIdentifierBloodPressureDiastolic] ||
-                [key.identifier isEqualToString:HKQuantityTypeIdentifierBloodPressureSystolic]) {
-                
-                if (bloodPressureRetrieved) {
-                    self.typeCount++;
-                    continue;
-                }
-                bloodPressureRetrieved = true;
-            }
-            
-            [self queryForUpdates:key predicate:predicate completion:^(NSArray * allObjects, NSArray * deletedObjects, NSError * error, HKQueryAnchor *anchor) {
-                
-                NSDateComponents *interval = [[NSDateComponents alloc] init];
-                          
-                if(([key.identifier isEqualToString:HKQuantityTypeIdentifierHeartRate] ||
-                   [key.identifier isEqualToString:HKQuantityTypeIdentifierStepCount] ||
-                    [key.identifier isEqualToString:HKQuantityTypeIdentifierActiveEnergyBurned] ||
-                    [key.identifier isEqualToString:HKQuantityTypeIdentifierDietaryProtein] ||
-                    [key.identifier isEqualToString:HKQuantityTypeIdentifierDietaryCarbohydrates] ||
-                    [key.identifier isEqualToString:HKQuantityTypeIdentifierDietaryFatMonounsaturated] ||
-                    [key.identifier isEqualToString:HKQuantityTypeIdentifierDietaryFatPolyunsaturated] ||
-                    [key.identifier isEqualToString:HKQuantityTypeIdentifierDietaryFatSaturated] ||
-                    [key.identifier isEqualToString:HKQuantityTypeIdentifierDietaryFatTotal] ||
-                    [key.identifier isEqualToString:HKQuantityTypeIdentifierDietaryEnergyConsumed]) &&
-                   allObjects.count > 0) {
-                    
-                    HKStatisticsOptions options;
-                    
-                    if ([key.identifier isEqualToString:HKQuantityTypeIdentifierHeartRate] ) {
-                        options = HKStatisticsOptionDiscreteAverage | HKStatisticsOptionDiscreteMin | HKStatisticsOptionDiscreteMax;
-                        interval.hour = 1;   // heart rate
-                    }
-                    else {
-                        options = HKStatisticsOptionCumulativeSum;
-                        interval.day = 1;  // steps
-                    }
-                    
-                    NSDate *startDate;
-                    NSDate *endDate;
-                    
-                    // If this is not the first time through, look at the initial queryForUpdates
-                    // results and set a start and end date accordingly
-                    if (!isFirstQueryForType && (allObjects.count > 0 || deletedObjects.count > 0)) {
-                        // Make sure all records are sorted by startDate
-                        NSSortDescriptor * descriptor = [[NSSortDescriptor alloc] initWithKey:@"startDate" ascending:YES];
-                        allObjects = [allObjects sortedArrayUsingDescriptors:@[descriptor]];
-                        // Get start date from first item in array
-                        NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
-                        [dateFormatter setDateFormat:@"yyyy-MM-dd'T'HH:mm"];
-                        NSString *startDateString = [((NSDictionary *)allObjects[0]) valueForKey:@"startDate"];
-                        NSString *endDateString = [((NSDictionary *)allObjects[allObjects.count-1])valueForKey:@"endDate"];
-                        startDate = [dateFormatter dateFromString: startDateString];
-                        endDate = [dateFormatter dateFromString: endDateString];
-                    }
-                    
-                    // MEMORY:
-                    allObjects = nil;
-                    deletedObjects = nil;
-                    
-                    // Get a summary instead
-                    [self queryForQuantitySummary:key
-                                             unit:[HKUnit countUnit]
-                                        startDate:startDate
-                                          endDate:endDate
-                                         interval:interval
-                                          options:options
-                                           userId:self.userId
-                                       completion:^(NSArray * allObjects, NSError *error) {
-                                           
-                                            // TODO: Check out alternative ways of tracking deleted records for summary
-                                            NSArray *emptyDeletedObjects = [[NSArray alloc] init];
-
-                                           [self processHealthKitResult:allObjects
-                                                         deletedObjects:emptyDeletedObjects
-                                                               callback:callback key:key typesCount:types.count anchor:anchor];
-                        
-                                       }];
-                }
-                else
-                {
-                    [self processHealthKitResult:allObjects
-                                  deletedObjects:deletedObjects
-                                        callback:callback key:key typesCount:types.count anchor:anchor];
-                    
-                    // MEMORY:
-                    allObjects = nil;
-                    deletedObjects = nil;
-                }
-            }];
-        }
+    // Get the next type to process
+    key = self.allTypesToProcess[0];
+    NSLog(@"01xxxa. readHealthKitData() key: %@", ((HKQuantityType *)key).identifier);
+    
+    bool isFirstQueryForType = true;
+    
+    // If there is no anchor object for this key, it's the first time through
+    if (predicate != nil ||
+        [self getAnchorWithTypeIdentifierForUserId:key.identifier userId:self.userId] != nil) {
+        isFirstQueryForType = false;
     }
+    
+    if ([key isKindOfClass:HKSampleType.class]) {
+        
+        [self queryForUpdates:key predicate:predicate completion:^(NSArray * allObjects, NSArray * deletedObjects, NSError * error, HKQueryAnchor *anchor) {
+            
+            NSDateComponents *interval = [[NSDateComponents alloc] init];
+                      
+            if(([key.identifier isEqualToString:HKQuantityTypeIdentifierHeartRate] ||
+               [key.identifier isEqualToString:HKQuantityTypeIdentifierStepCount] ||
+                [key.identifier isEqualToString:HKQuantityTypeIdentifierActiveEnergyBurned] ||
+                [key.identifier isEqualToString:HKQuantityTypeIdentifierDietaryProtein] ||
+                [key.identifier isEqualToString:HKQuantityTypeIdentifierDietaryCarbohydrates] ||
+                [key.identifier isEqualToString:HKQuantityTypeIdentifierDietaryFatMonounsaturated] ||
+                [key.identifier isEqualToString:HKQuantityTypeIdentifierDietaryFatPolyunsaturated] ||
+                [key.identifier isEqualToString:HKQuantityTypeIdentifierDietaryFatSaturated] ||
+                [key.identifier isEqualToString:HKQuantityTypeIdentifierDietaryFatTotal] ||
+                [key.identifier isEqualToString:HKQuantityTypeIdentifierDietaryEnergyConsumed]) &&
+               allObjects.count > 0) {
+                
+                HKStatisticsOptions options;
+                
+                if ([key.identifier isEqualToString:HKQuantityTypeIdentifierHeartRate] ) {
+                    options = HKStatisticsOptionDiscreteAverage | HKStatisticsOptionDiscreteMin | HKStatisticsOptionDiscreteMax;
+                    interval.hour = 1;   // heart rate
+                }
+                else {
+                    options = HKStatisticsOptionCumulativeSum;
+                    interval.day = 1;  // steps
+                }
+                
+                NSDate *startDate;
+                NSDate *endDate;
+                
+                // If this is not the first time through, look at the initial queryForUpdates
+                // results and set a start and end date accordingly
+                if (!isFirstQueryForType && (allObjects.count > 0 || deletedObjects.count > 0)) {
+                    // Make sure all records are sorted by startDate
+                    NSSortDescriptor * descriptor = [[NSSortDescriptor alloc] initWithKey:@"startDate" ascending:YES];
+                    allObjects = [allObjects sortedArrayUsingDescriptors:@[descriptor]];
+                    // Get start date from first item in array
+                    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+                    [dateFormatter setDateFormat:@"yyyy-MM-dd'T'HH:mm"];
+                    NSString *startDateString = [((NSDictionary *)allObjects[0]) valueForKey:@"startDate"];
+                    NSString *endDateString = [((NSDictionary *)allObjects[allObjects.count-1])valueForKey:@"endDate"];
+                    startDate = [dateFormatter dateFromString: startDateString];
+                    endDate = [dateFormatter dateFromString: endDateString];
+                }
+                
+                // MEMORY:
+                allObjects = nil;
+                deletedObjects = nil;
+                
+                // Get a summary instead
+                [self queryForQuantitySummary:key
+                                         unit:[HKUnit countUnit]
+                                    startDate:startDate
+                                      endDate:endDate
+                                     interval:interval
+                                      options:options
+                                       userId:self.userId
+                                   completion:^(NSArray * allObjects, NSError *error) {
+                                       
+                                        // TODO: Check out alternative ways of tracking deleted records for summary
+                                        NSArray *emptyDeletedObjects = [[NSArray alloc] init];
+
+                                       [self processHealthKitResult:allObjects
+                                                     deletedObjects:emptyDeletedObjects
+                                                           callback:callback key:key  anchor:anchor];
+                    
+                                   }];
+            }
+            else
+            {
+                [self processHealthKitResult:allObjects
+                              deletedObjects:deletedObjects
+                                    callback:callback
+                                         key:key
+                                      anchor:anchor];
+                
+                // MEMORY:
+                allObjects = nil;
+                deletedObjects = nil;
+            }
+        }];
+    }
+
 }
 
 -(void)queryForUpdates:(HKQuantityType *)type
@@ -1060,10 +1054,10 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                                                      HKQueryAnchor * _Nullable newAnchor,
                                                      NSError * _Nullable error) {
                                                                    
-            NSLog(@"00xxxc10 HKAnchoredObjectQuery resultsHandler() Type:%@ sampleObjects.count:%lu deletedObjects.count:%lu",
-                  type.identifier,
-                  (unsigned long)sampleObjects.count,
-                  (unsigned long)deletedObjects.count);
+//            NSLog(@"00xxxc10 HKAnchoredObjectQuery resultsHandler() Type:%@ sampleObjects.count:%lu deletedObjects.count:%lu",
+//                  type.identifier,
+//                  (unsigned long)sampleObjects.count,
+//                  (unsigned long)deletedObjects.count);
         
             NSMutableArray *arrUUID = [[NSMutableArray alloc]init];
         
@@ -1260,9 +1254,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                  NSString *stringMinutes = [NSString stringWithFormat: @"%ld", (long)sessionMinutes];
                  [dict setValue:stringMinutes forKey:@"minutes"];
              }
-             
-             //NSLog(@"dict:%@",dict);
-             
+                          
              [self.readingsArray addObject:dict];
 
         }
@@ -1277,7 +1269,8 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
 // Add the results returned from HealthKit for a specific reading type to the jsonObject
 // If finished, call back to JS
 -(void)processHealthKitResult:(NSArray *)allObjects
-               deletedObjects:(NSArray *)deletedObjects callback:(RCTResponseSenderBlock)callback key:(HKQuantityType *)key typesCount:(NSUInteger)typesCount anchor:(HKQueryAnchor *)anchor
+               deletedObjects:(NSArray *)deletedObjects callback:(RCTResponseSenderBlock)callback key:(HKQuantityType *)key
+                       anchor:(HKQueryAnchor *)anchor
 {
     NSMutableArray *jsonArray;
     
@@ -1308,113 +1301,46 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         [self.anchorsToDrop setObject:anchor forKey:key.identifier];
     }
     
-    self.typeCount++;
-    NSLog(@"20xxx01. processHealthKitResults() key:%@ count: %i of %i", key.identifier, (int)self.typeCount, (int)typesCount);
-    if (self.typeCount == typesCount) {
-        [self callBackHealthKitResults:callback];
-    }
+    NSLog(@"20xxx01. processHealthKitResult() key:%@ ", key.identifier);
+    [self callBackHealthKitResults:callback];
 }
 
 -(void)callBackHealthKitResults:(RCTResponseSenderBlock)callback
 {
     @autoreleasepool {
-            // We've processed all the requested types
-        // Check if any results have more than 500 records
-        self.wasBackgroundUploadInProgress = self.isBackgroundUploadInProgress;
-        self.isBackgroundUploadInProgress = false;
-        self.jsonCallbackObject = [[NSMutableDictionary alloc] init];
-        self.jsonDeletedCallbackObject = [[NSMutableDictionary alloc] init];
-        NSMutableDictionary *jsonOverflowObject = [[NSMutableDictionary alloc] init];
         
-        // Copy the results from jsonObject to jsonCallbackObject
-        // add any overflow items to a temporary object
-        // (since you can't change the object you're iterating over)
+        // TODO: Temp
         for (NSString *key in self.jsonObject) {
-            @autoreleasepool {
-                        NSMutableArray *typeArray = [self.jsonObject objectForKey:key];
-                NSLog(@"11xxx02. callBackHealthKitResults() key:%@ count:%i", key, (int)typeArray.count);
-                if (typeArray.count > MAX_RECORDS) {
-                    NSRange range;
-                    range.location = MAX_RECORDS;
-                    range.length = typeArray.count - MAX_RECORDS;
-                    
-                    // Create an array with the overflow items
-                    NSMutableArray *overflowArray = [NSMutableArray arrayWithArray:[typeArray subarrayWithRange:range]];
-                    NSLog(@"11xxx03. callBackHealthKitResults() overflowArray.count:%i",(int)overflowArray.count);
-                    // Remove those items from the array
-                    [typeArray removeObjectsInRange:range];
-                    NSLog(@"11xxx04 callBackHealthKitResults() jsonCallbackObject.typeArray.count:%i", (int)typeArray.count);
-                    // Temporarily add the overflow items to an object
-                    [jsonOverflowObject setObject:overflowArray forKey:key];
-                    self.isBackgroundUploadInProgress = true;
-                }
-                
-                NSString *headsUpType = [self getHeadsUpTypeFromHealthKitType:key];
-                [self.jsonCallbackObject setObject:typeArray forKey:headsUpType];
-            }
+            NSMutableArray *tempArray = [self.jsonObject objectForKey:key];
+            NSLog(@"Key:%@  Count:%lu", key, (unsigned long)tempArray.count);
+        }
 
-        }
-        
-        // Copy the results from jsonDeletedObject to jsonDeletedCallbackObject
-        // add any overflow items to a temporary object
-        // (since you can't change the object you're iterating over)
-        for (NSString *key in self.jsonDeletedObject) {
-            NSMutableArray *typeArray = [self.jsonDeletedObject objectForKey:key];
-            NSLog(@"11xxx02. callBackHealthKitResults() key:%@ count:%i", key, (int)typeArray.count);
-            
-            NSString *headsUpType = [self getHeadsUpTypeFromHealthKitType:key];
-            [self.jsonDeletedCallbackObject setObject:typeArray forKey:headsUpType];
-        }
-        
-        if (self.isBackgroundUploadInProgress) {
-            // Recreate the jsonObject and copy all overflow items to it for the next call
-            self.jsonObject = [[NSMutableDictionary alloc] init];
-            for (NSString *key in jsonOverflowObject) {
-                @autoreleasepool {
-                                NSMutableArray *array = [(NSArray *)[jsonOverflowObject objectForKey:key] mutableCopy];
-                    NSLog(@"11xxx05. callBackHealthKitResults() jsonObject overflow array count: %i", (int)array.count);
-                    [self.jsonObject setValue:array forKey:key];
-                    
-                    // MEMORY:
-                    array = nil;
-                }
-            }
-            
-            for (HKQuantityType *key in jsonOverflowObject) {
-                NSLog(@"11xxx06. callBackHealthKitResults() key: %@",key);
-            }
-        }
         
         // Send the results to JS
         NSLog(@"11xxx07. callBackHealthKitResults() callback to JS");
         
         // Make sure there are readings
-        if ([self.jsonCallbackObject count] == 0 && [self.jsonDeletedCallbackObject count] == 0 )
+        if ([self.jsonObject count] == 0 && [self.jsonDeletedObject count] == 0 )
         {
-            // return a null to indicate background download complete
-            NSLog(@"11xxx07a. callBackHealthKitResults() return null");
-            callback(@[[NSNull null], [NSNull null]]);
+            return;
         }
         else
         {
-            NSLog(@"11xxx07b. callBackHealthKitResults() return count: %i", (int)[self.jsonCallbackObject count]);
             NSMutableDictionary *jsonFinalObject = [[NSMutableDictionary alloc] init];
-            [jsonFinalObject setObject: self.jsonCallbackObject forKey:@"added"];
-            [jsonFinalObject setObject: self.jsonDeletedCallbackObject forKey:@"deleted"];
-            if (!self.isBackgroundUploadInProgress) {
-                // Need to set this flag when there were no overflow objects,
-                // so the next call to readHealthKitData() returns NULL
+            [jsonFinalObject setObject: self.jsonObject forKey:@"added"];
+            [jsonFinalObject setObject: self.jsonDeletedObject forKey:@"deleted"];
                 
-                self.wasBackgroundUploadInProgress = true;
-            }
+            // Remove the type from the types to be processed
+            [self.allTypesToProcess removeObject:self.allTypesToProcess[0]];
             
             // MEMORY:
             self.jsonCallbackObject = nil;
             self.jsonDeletedObject = nil;
-            jsonOverflowObject = nil;
             
             callback(@[@[jsonFinalObject], [NSNull null]]);
+
             jsonFinalObject = nil;
+            return;
         }
 
     }
@@ -1899,7 +1825,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                                                                                    completionHandler,
                                                                                    NSError * _Nullable error) {
                                                                        
-                                                                       NSLog(@"00xxxc5. HKObserverQuery updateHandler() key: %@", ((HKQuantityType *)key).identifier);
+                                                                      NSLog(@"00xxxc5. HKObserverQuery updateHandler() key: %@", ((HKQuantityType *)key).identifier);
                                                                        
                                                                        // TODO: Decide what to do here. Possibly send notification of updates
                                                                        //[self queryForUpdates:key];
@@ -1920,9 +1846,15 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
             [self.healthStore enableBackgroundDeliveryForType:key
                                                     frequency:HKUpdateFrequencyImmediate
                                                withCompletion:^(BOOL success, NSError * _Nullable error) {
+                                                
+                            // This just tells you if the registration for background delivery worked
+                            if (success) {
+                                NSLog(@"00xxxc5. enableBackgroundDeliveryForType handler called for %@ - SUCCESS error:%@", key, error.description);
+                            }
+                            else {
+                                NSLog(@"00xxxc5. enableBackgroundDeliveryForType handler called for %@ - FAILED error:%@", key, error.description);
+                            }
                                                    
-                                                   // This just tells you if the registration for background delivery worked
-                                                   // NSLog(@"00xxxc5. enableBackgroundDeliveryForType handler called for %@ - success: %d error:%@", key, success, error.description);
                                                }];
         }
     }
