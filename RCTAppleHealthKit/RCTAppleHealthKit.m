@@ -1267,7 +1267,6 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
     
     // MEMORY:
     results = nil;
-    //return arr;
 }
 
 
@@ -1287,9 +1286,15 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         jsonArray = [self buildJSONArrayFromHealthKitArray:allObjects type:key];
         [self.jsonObject setObject:jsonArray forKey:key.identifier];
     }
+    else {
+        self.jsonObject = [[NSMutableDictionary alloc] init];
+    }
     
     if (deletedObjects.count > 0) {
         [self.jsonDeletedObject setObject:deletedObjects forKey:key.identifier];
+    }
+    else {
+        self.jsonDeletedObject = [[NSMutableDictionary alloc] init];
     }
     
     // MEMORY:
