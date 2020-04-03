@@ -24,7 +24,7 @@
 @property (nonatomic) NSMutableArray *readingsArray;
 @property (nonatomic) NSString *userId;
 @property (nonatomic) NSMutableArray *allTypesToProcess;
-
+@property (nonatomic) NSString *currentMetric;
 
 - (void)isHealthKitAvailable:(RCTResponseSenderBlock)callback;
 - (void)initializeHealthKit:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback;

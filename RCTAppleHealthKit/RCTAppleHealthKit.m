@@ -25,6 +25,7 @@
 
 @implementation RCTAppleHealthKit
 @synthesize bridge = _bridge;
+@synthesize anchorsToDrop;
 
 NSString * const NEW_ANCHOR = @"newAnchor";
 NSString * const DEFAULT_USER_ID = @"default";
@@ -239,6 +240,12 @@ RCT_EXPORT_METHOD(getInfo:(NSDictionary *)input callback:(RCTResponseSenderBlock
 RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback)
 {
     [self mindfulness_saveMindfulSession:input callback:callback];
+}
+
+- (id)init
+{
+    self.anchorsToDrop = [[NSMutableDictionary alloc] init];
+    return self;
 }
 
 -(void)isHealthKitAvailable:(RCTResponseSenderBlock)callback {
@@ -464,28 +471,13 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
 // null value is sent back across the bridge, indicating all metrics are completed
 -(void)readHealthKitData:(NSDictionary *    )input predicate:(NSPredicate *)predicate callback:(RCTResponseSenderBlock)callback {
     
-    NSArray *readPermsArray = [input objectForKey:@"permissions"];
-    NSSet *allTypesSet = [self getReadPermsFromOptions:readPermsArray];
-    NSMutableArray *allTypes = [NSMutableArray arrayWithArray:[allTypesSet allObjects]];
+    // Get the type to process
+    NSString *option = [input objectForKey:@"metric"];
+    HKQuantityType *key = [self getReadPermFromOption:option];
+    self.currentMetric = key.identifier;
     self.userId = [input objectForKey:@"userId"];
     if (self.userId.length == 0) {
         self.userId = DEFAULT_USER_ID;
-    }
-    
-    // If this is the first time through, allTypesToProcess will be nil,
-    // so store allTypes in allTypesToProcess
-    if (self.allTypesToProcess == nil) {
-        self.allTypesToProcess = allTypes;
-        // Clear all anchors to be dropped
-        self.anchorsToDrop = [[NSMutableDictionary alloc] init];
-    }
-    else if (self.allTypesToProcess.count == 0)
-    {
-        // If there are no more types to process, we're done with this cycle
-        self.allTypesToProcess = nil;
-        // return a null to indicate background download complete
-        callback(@[[NSNull null], [NSNull null]]);
-        return;
     }
     
     // Upgrade the anchors if necessary
@@ -493,11 +485,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
     
     self.jsonObject = [[NSMutableDictionary alloc] init];
     self.jsonDeletedObject = [[NSMutableDictionary alloc] init];
-    
-    HKQuantityType *key;
-    
-    // Get the next type to process
-    key = self.allTypesToProcess[0];
+        
     NSLog(@"01xxxa. readHealthKitData() key: %@", ((HKQuantityType *)key).identifier);
     
     bool isFirstQueryForType = true;
@@ -591,6 +579,9 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                 deletedObjects = nil;
             }
         }];
+    }
+    else {
+         callback(@[[NSNull null], [NSNull null]]);
     }
 
 }
@@ -1318,14 +1309,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
 -(void)callBackHealthKitResults:(RCTResponseSenderBlock)callback
 {
     @autoreleasepool {
-        
-        // TODO: Temp
-        for (NSString *key in self.jsonObject) {
-            NSMutableArray *tempArray = [self.jsonObject objectForKey:key];
-            NSLog(@"Key:%@  Count:%lu", key, (unsigned long)tempArray.count);
-        }
 
-        
         // Send the results to JS
         NSLog(@"11xxx07. callBackHealthKitResults() callback to JS");
         
@@ -1347,6 +1331,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
             self.jsonCallbackObject = nil;
             self.jsonDeletedObject = nil;
             
+            NSLog(@"%@ count:%lu", self.currentMetric, (unsigned long)[[self.jsonObject objectForKey:self.currentMetric] count]);
             callback(@[@[jsonFinalObject], [NSNull null]]);
 
             jsonFinalObject = nil;

@@ -313,8 +313,7 @@
     return writePerms;
 }
 
-
-// Returns HealthKit read permissions from options array
+// Returns HealthKit read permission from option
 - (NSSet *)getReadPermsFromOptions:(NSArray *)options {
     NSDictionary *readPermDict = [self readPermsDict];
     NSMutableSet *readPermSet = [NSMutableSet setWithCapacity:1];
@@ -339,6 +338,12 @@
         }
     }
     return readPermSet;
+}
+
+
+// Returns HealthKit read permission from option
+- (HKQuantityType *)getReadPermFromOption:(NSString *)option {
+    return [self.readPermsDict objectForKey:option];
 }
 
 - (NSSet *)getReadPerms {
