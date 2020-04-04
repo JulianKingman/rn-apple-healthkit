@@ -1274,18 +1274,17 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         NSSortDescriptor *descriptor = [[NSSortDescriptor alloc] initWithKey:@"startTimestamp" ascending:NO];
         allObjects = [allObjects sortedArrayUsingDescriptors:@[descriptor]];
         
-        jsonArray = [self buildJSONArrayFromHealthKitArray:allObjects type:key];
-        [self.jsonObject setObject:jsonArray forKey:key.identifier];
+        self.jsonObject = [self buildJSONArrayFromHealthKitArray:allObjects type:key];
     }
     else {
-        self.jsonObject = [[NSMutableDictionary alloc] init];
+        self.jsonObject = [[NSArray alloc] init];
     }
     
     if (deletedObjects.count > 0) {
-        [self.jsonDeletedObject setObject:deletedObjects forKey:key.identifier];
+        self.jsonDeletedObject = deletedObjects;
     }
     else {
-        self.jsonDeletedObject = [[NSMutableDictionary alloc] init];
+        self.jsonDeletedObject = [[NSArray alloc] init];
     }
     
     // MEMORY:
@@ -1331,7 +1330,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
             self.jsonCallbackObject = nil;
             self.jsonDeletedObject = nil;
             
-            NSLog(@"%@ count:%lu", self.currentMetric, (unsigned long)[[self.jsonObject objectForKey:self.currentMetric] count]);
+            NSLog(@"%@ count:%lu", self.currentMetric, (unsigned long)[self.jsonObject count]);
             callback(@[@[jsonFinalObject], [NSNull null]]);
 
             jsonFinalObject = nil;
