@@ -483,8 +483,8 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
     // Upgrade the anchors if necessary
     [self upgradeAnchorsWithUserId:self.userId];
     
-    self.jsonObject = [[NSMutableDictionary alloc] init];
-    self.jsonDeletedObject = [[NSMutableDictionary alloc] init];
+    self.jsonObject = [[NSMutableArray alloc] init];
+    self.jsonDeletedObject = [[NSMutableArray alloc] init];
         
     NSLog(@"01xxxa. readHealthKitData() key: %@", ((HKQuantityType *)key).identifier);
     
