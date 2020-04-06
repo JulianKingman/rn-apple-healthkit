@@ -1331,7 +1331,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
             self.jsonDeletedObject = nil;
             
             NSLog(@"%@ count:%lu", self.currentMetric, (unsigned long)[self.jsonObject count]);
-            callback(@[@[jsonFinalObject], [NSNull null]]);
+            callback(@[[NSNull null], jsonFinalObject]);
 
             jsonFinalObject = nil;
             return;
