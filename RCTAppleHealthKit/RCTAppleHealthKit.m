@@ -1312,30 +1312,22 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         // Send the results to JS
         NSLog(@"11xxx07. callBackHealthKitResults() callback to JS");
         
-        // Make sure there are readings
-        if ([self.jsonObject count] == 0 && [self.jsonDeletedObject count] == 0 )
-        {
-            return;
-        }
-        else
-        {
-            NSMutableDictionary *jsonFinalObject = [[NSMutableDictionary alloc] init];
-            [jsonFinalObject setObject: self.jsonObject forKey:@"added"];
-            [jsonFinalObject setObject: self.jsonDeletedObject forKey:@"deleted"];
-                
-            // Remove the type from the types to be processed
-            [self.allTypesToProcess removeObject:self.allTypesToProcess[0]];
+        NSMutableDictionary *jsonFinalObject = [[NSMutableDictionary alloc] init];
+        [jsonFinalObject setObject: self.jsonObject forKey:@"added"];
+        [jsonFinalObject setObject: self.jsonDeletedObject forKey:@"deleted"];
             
-            // MEMORY:
-            self.jsonCallbackObject = nil;
-            self.jsonDeletedObject = nil;
-            
-            NSLog(@"%@ count:%lu", self.currentMetric, (unsigned long)[self.jsonObject count]);
-            callback(@[[NSNull null], jsonFinalObject]);
+        // Remove the type from the types to be processed
+        [self.allTypesToProcess removeObject:self.allTypesToProcess[0]];
+        
+        // MEMORY:
+        self.jsonCallbackObject = nil;
+        self.jsonDeletedObject = nil;
+        
+        NSLog(@"%@ count:%lu", self.currentMetric, (unsigned long)[self.jsonObject count]);
+        callback(@[[NSNull null], jsonFinalObject]);
 
-            jsonFinalObject = nil;
-            return;
-        }
+        jsonFinalObject = nil;
+        return;
 
     }
 }
