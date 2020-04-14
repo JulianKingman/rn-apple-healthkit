@@ -61,6 +61,11 @@ RCT_EXPORT_METHOD(readHealthDataByDate:(NSDictionary *)input callback:(RCTRespon
     [self readHealthKitDataByDate:input callback:callback];
 }
 
+RCT_EXPORT_METHOD(setObservers: (NSDictionary *)input callback:(RCTResponseSenderBlock)callback)
+{
+    [self setBackgroundObservers:input callback:callback];
+}
+
 RCT_EXPORT_METHOD(clearHealthData:(RCTResponseSenderBlock)callback)
 {
     [self clearHealthDataFromFile:callback];
@@ -246,6 +251,25 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
 {
     self.anchorsToDrop = [[NSMutableDictionary alloc] init];
     return self;
+}
+
+-(void)setBackgroundObservers:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback {
+    NSSet *readDataTypes;
+    
+    // Save the callback
+    self.backgroundObserverCallback = callback;
+    
+    // get permissions from input object provided by JS options argument
+    NSDictionary* permissions = [input objectForKey:@"metrics"];
+    
+        NSArray* readPermsArray = [permissions objectForKey:@"read"];
+        NSSet* readPerms = [self getReadPermsFromOptions:readPermsArray];
+        
+        if(readPerms != nil) {
+            readDataTypes = readPerms;
+            // Set up background delivery for the specified data types
+            [self setUpBackgroundDeliveryForDataTypes:readDataTypes];
+        }
 }
 
 -(void)isHealthKitAvailable:(RCTResponseSenderBlock)callback {
@@ -462,13 +486,8 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
 }
 
 // Reads Health Kit Data
-// This method is called from JS with a full list of metrics to be read
-// and that full list is stored in the allTypesToProcess array
-// This method processes one metric at a time and hands the results back across the bridge,
-// then it removes the metric from allTypesToProcess.
-// JS calls the method again, and the next metric in allTypesToProcess is processed.
-// This cycle continues until all the metrics in allTypesToProcess is empty, then a
-// null value is sent back across the bridge, indicating all metrics are completed
+// This method is called from JS with a full single metric
+// to be read and returned from HealthKit
 -(void)readHealthKitData:(NSDictionary *    )input predicate:(NSPredicate *)predicate callback:(RCTResponseSenderBlock)callback {
     
     // Get the type to process
@@ -1277,14 +1296,14 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         self.jsonObject = [self buildJSONArrayFromHealthKitArray:allObjects type:key];
     }
     else {
-        self.jsonObject = [[NSArray alloc] init];
+        self.jsonObject = [[NSMutableArray alloc] init];
     }
     
     if (deletedObjects.count > 0) {
         self.jsonDeletedObject = deletedObjects;
     }
     else {
-        self.jsonDeletedObject = [[NSArray alloc] init];
+        self.jsonDeletedObject = [[NSMutableArray alloc] init];
     }
     
     // MEMORY:
@@ -1315,9 +1334,6 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         NSMutableDictionary *jsonFinalObject = [[NSMutableDictionary alloc] init];
         [jsonFinalObject setObject: self.jsonObject forKey:@"added"];
         [jsonFinalObject setObject: self.jsonDeletedObject forKey:@"deleted"];
-            
-        // Remove the type from the types to be processed
-        [self.allTypesToProcess removeObject:self.allTypesToProcess[0]];
         
         // MEMORY:
         self.jsonCallbackObject = nil;

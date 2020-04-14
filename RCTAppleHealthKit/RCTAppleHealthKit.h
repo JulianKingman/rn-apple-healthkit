@@ -16,15 +16,15 @@
 @interface RCTAppleHealthKit : NSObject <RCTBridgeModule>
 
 @property (nonatomic) HKHealthStore *healthStore;
-@property (nonatomic) NSMutableDictionary *jsonObject;
-@property (nonatomic) NSMutableDictionary *jsonDeletedObject;
+@property (nonatomic) NSMutableArray *jsonObject;
+@property (nonatomic) NSArray *jsonDeletedObject;
 @property (nonatomic) NSMutableDictionary *jsonCallbackObject;
 @property (nonatomic) NSMutableDictionary *jsonDeletedCallbackObject;
 @property (nonatomic) NSMutableDictionary *anchorsToDrop;
 @property (nonatomic) NSMutableArray *readingsArray;
 @property (nonatomic) NSString *userId;
-@property (nonatomic) NSMutableArray *allTypesToProcess;
 @property (nonatomic) NSString *currentMetric;
+@property (nonatomic) RCTResponseSenderBlock backgroundObserverCallback;
 
 - (void)isHealthKitAvailable:(RCTResponseSenderBlock)callback;
 - (void)initializeHealthKit:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback;
