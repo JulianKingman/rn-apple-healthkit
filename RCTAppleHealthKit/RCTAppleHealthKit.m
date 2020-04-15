@@ -499,6 +499,11 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         self.userId = DEFAULT_USER_ID;
     }
     
+    // TODO: TEMP
+    if (self.currentMetric == HKCorrelationTypeIdentifierBloodPressure) {
+        NSLog(@"Processing HKCorrelationTypeIdentifierBloodPressure");
+    }
+    
     // Upgrade the anchors if necessary
     [self upgradeAnchorsWithUserId:self.userId];
     
@@ -784,8 +789,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
             completion(results, arrDeleted, error, anchor);
         }];
     }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierBloodPressureDiastolic] ||
-             [str isEqualToString:HKQuantityTypeIdentifierBloodPressureSystolic]) {//DONE
+    else if ([str isEqualToString:HKCorrelationTypeIdentifierBloodPressure]) {//DONE
         [self getIndividualRecords:type unit:[HKUnit millimeterOfMercuryUnit]
                          predicate:predicate
                         completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
@@ -1052,8 +1056,8 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
     
     HKSampleType *sampleType = type;
     // If Diastolic or Systolic blood pressure, convert to Blood Pressure correlation type
-    if ([type.identifier isEqualToString:HKQuantityTypeIdentifierBloodPressureDiastolic] ||
-        [type.identifier isEqualToString:HKQuantityTypeIdentifierBloodPressureSystolic]) {
+    // TODO: Is this conversion necessary?
+    if ([type.identifier isEqualToString:HKCorrelationTypeIdentifierBloodPressure]) {
         sampleType = [HKCorrelationType correlationTypeForIdentifier:HKCorrelationTypeIdentifierBloodPressure];
     }
     
@@ -1104,8 +1108,6 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
     self.readingsArray = [[NSMutableArray alloc] init];
     NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
     [dateFormatter setDateFormat:@"yyyy-MM-dd'T'HH:mm"];
-    HKQuantityType *systolicType = [HKQuantityType quantityTypeForIdentifier:HKQuantityTypeIdentifierBloodPressureSystolic];
-    HKQuantityType *diastolicType = [HKQuantityType quantityTypeForIdentifier:HKQuantityTypeIdentifierBloodPressureDiastolic];
     
     for (int i=0; i<results.count; i++) {
         
@@ -1134,12 +1136,29 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
              if ([qty isKindOfClass:[HKCorrelation class]]) {
                  HKCorrelation *correlation = (HKCorrelation *)qty;
                  
-                 if ([type.identifier isEqualToString:@"HKQuantityTypeIdentifierBloodPressureSystolic"] ||
-                     [type.identifier isEqualToString:@"HKQuantityTypeIdentifierBloodPressureDiastolic"]) {
+                 if ([type.identifier isEqualToString:HKCorrelationTypeIdentifierBloodPressure]) {
+                     HKQuantityType *systolicType = [HKQuantityType quantityTypeForIdentifier:HKQuantityTypeIdentifierBloodPressureSystolic];
+                     HKQuantityType *diastolicType = [HKQuantityType quantityTypeForIdentifier:HKQuantityTypeIdentifierBloodPressureDiastolic];
+                     
                      HKQuantitySample *bloodPressureSystolicValue = [correlation objectsForType:systolicType].anyObject;
                      HKQuantitySample *bloodPressureDiastolicValue = [correlation objectsForType:diastolicType].anyObject;
-                     qtyVal = bloodPressureDiastolicValue.quantity;
-                     qtyVal2 = bloodPressureSystolicValue.quantity;
+                     
+                     // This value can be nil if user disallows diastolic but not systolic permission
+                     if (bloodPressureDiastolicValue != nil) {
+                         qtyVal = bloodPressureDiastolicValue.quantity;
+                     }
+                     else {
+                         qtyVal = 0;
+                     }
+                     
+                     // This value can be nil if the user disallows systolic but not diastolic permission
+                     if (bloodPressureSystolicValue != nil) {
+                         qtyVal2 = bloodPressureSystolicValue.quantity;
+                     }
+                     else {
+                         qtyVal2 = 0;
+                     }
+                     
                  }
                  NSString *strQTYType = [NSString stringWithFormat:@"%@", correlation.correlationType];
                  [dict setValue:strQTYType forKey:@"quantityType"];
@@ -1204,8 +1223,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                  }
                  [dict setValue:strUnit forKey:@"unit"];
                  
-                 if ([type.identifier isEqualToString:HKQuantityTypeIdentifierBloodPressureSystolic] ||
-                     [type.identifier isEqualToString:HKQuantityTypeIdentifierBloodPressureDiastolic]) {
+                 if ([type.identifier isEqualToString:HKCorrelationTypeIdentifierBloodPressure]) {
                      int intValue = (int)floor(doubleValue);
                      [dict setValue:[NSString stringWithFormat:@"%i",intValue] forKey:@"value"];
                  }
@@ -1218,8 +1236,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
              // Need to get second value if it's a correlation
              if ([qty isKindOfClass:[HKCorrelation class]]) {
                  doubleValue2 = [qtyVal2 doubleValueForUnit:unit];
-                 if ([type.identifier isEqualToString:HKQuantityTypeIdentifierBloodPressureSystolic] ||
-                     [type.identifier isEqualToString:HKQuantityTypeIdentifierBloodPressureDiastolic]) {
+                 if ([type.identifier isEqualToString:HKCorrelationTypeIdentifierBloodPressure]) {
                      int intValue = (int)floor(doubleValue2);
                      [dict setValue:[NSString stringWithFormat:@"%i",intValue] forKey:@"value2"];
                  }
@@ -1403,8 +1420,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                                @"device_name" : [hkDict valueForKey:@"source"]
                                };
             }
-            else if ([type.identifier isEqualToString:HKQuantityTypeIdentifierBloodPressureDiastolic] ||
-                     [type.identifier isEqualToString:HKQuantityTypeIdentifierBloodPressureSystolic] ) {
+            else if ([type.identifier isEqualToString:HKCorrelationTypeIdentifierBloodPressure] ) {
                 hkReading = @{ @"h_id" : uuid,
                                @"diastolic" : [hkDict valueForKey:@"value"],
                                @"systolic" : [hkDict valueForKey:@"value2"],
@@ -1808,17 +1824,6 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
     [self.healthStore executeQuery:query];
 }
 
--(NSString *)getHeadsUpTypeFromHealthKitType:(NSString *)type
-{
-    if ([type isEqualToString:HKQuantityTypeIdentifierBloodPressureDiastolic] ||
-             [type isEqualToString:HKQuantityTypeIdentifierBloodPressureSystolic]) {
-        return @"HKQuantityTypeIdentifierBloodPressure";
-    }
-    else {
-        return type;
-    }
-}
-
 //Akshay
 -(void)setUpBackgroundDeliveryForDataTypes :(NSSet*) types {
     
@@ -2045,11 +2050,8 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
     else if ([str isEqualToString:HKQuantityTypeIdentifierLeanBodyMass]) {
         return keyUnit == 1 ? @"LeanBodyMass" : @"lbs";
     }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierBloodPressureDiastolic]) {
-        return keyUnit == 1 ? @"BloodPressureDiastolic" : @"mmHg";
-    }
-    else if ([str isEqualToString:HKQuantityTypeIdentifierBloodPressureSystolic]) {
-        return keyUnit == 1 ? @"BloodPressureSystolic" : @"mmHg";
+    else if ([str isEqualToString:HKCorrelationTypeIdentifierBloodPressure]) {
+        return keyUnit == 1 ? @"BloodPressure" : @"mmHg";
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierBodyMassIndex]) {
         return keyUnit == 1 ? @"BodyMassIndex" : @"bmi";
