@@ -323,18 +323,17 @@
     
     for(int i=0; i<[options count]; i++) {
         NSString *optionKey = options[i];
+
+        // NOTE: BP has two identifiers, automatically map both
+        if ([optionKey isEqualToString:@"BloodPressure"]) {
+          [readPermSet addObject:[HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierBloodPressureSystolic]];
+          [readPermSet addObject:[HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierBloodPressureDiastolic]];
+          continue;
+        }
+
         HKObjectType *val = [readPermDict objectForKey:optionKey];
         if(val != nil) {
             
-//            // NOTE: Only leave one blood pressure metric since there is only one in HealthKit
-//            if ([val.identifier isEqualToString:HKQuantityTypeIdentifierBloodPressureDiastolic] ||
-//                [val.identifier isEqualToString:HKQuantityTypeIdentifierBloodPressureSystolic]) {
-//
-//                if (bloodPressureMetric) {
-//                    continue;
-//                }
-//                bloodPressureMetric = true;
-//            }
 
             [readPermSet addObject:val];
         }
@@ -374,6 +373,14 @@
     
     for(int i=0; i<[options count]; i++) {
         NSString *optionKey = options[i];
+
+        // NOTE: BP has two identifiers, automatically map both
+        if ([optionKey isEqualToString:@"BloodPressure"]) {
+          [writePermSet addObject:[HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierBloodPressureSystolic]];
+          [writePermSet addObject:[HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierBloodPressureDiastolic]];
+          continue;
+        }
+
         HKObjectType *val = [writePermDict objectForKey:optionKey];
         if(val != nil) {
             [writePermSet addObject:val];
