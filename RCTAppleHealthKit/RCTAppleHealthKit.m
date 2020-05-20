@@ -53,7 +53,7 @@ RCT_EXPORT_METHOD(clearAnchors:(NSDictionary *)input
 
 RCT_EXPORT_METHOD(readHealthDataByAnchor:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback)
 {
-    [self readHealthKitData:input predicate:nil callback:callback];
+    [self readHealthKitData:input predicate:nil callback:callback healthKitCallback:nil];
 }
 
 RCT_EXPORT_METHOD(readHealthDataByDate:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback)
@@ -254,21 +254,20 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
 }
 
 -(void)setBackgroundObservers:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback {
-    NSSet *readDataTypes;
     
     // Save the callback
     self.backgroundObserverCallback = callback;
     
     // get permissions from input object provided by JS options argument
-    NSDictionary* permissions = [input objectForKey:@"metrics"];
+    NSArray* permissions = [input objectForKey:@"metrics"];
     
-        NSArray* readPermsArray = [permissions objectForKey:@"read"];
-        NSSet* readPerms = [self getReadPermsFromOptions:readPermsArray];
+       // NSArray* readPermsArray = [permissions objectForKey:@"read"];
+    
+        //NSSet* perms = [self getReadPermsFromOptions:permissions];
         
-        if(readPerms != nil) {
-            readDataTypes = readPerms;
+        if(permissions != nil) {
             // Set up background delivery for the specified data types
-            [self setUpBackgroundDeliveryForDataTypes:readDataTypes];
+            [self setUpBackgroundDeliveryForDataTypes:permissions callback:callback];
         }
 }
 
@@ -322,7 +321,8 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                     
                     NSLog(@"00xxxc1 initializeHealthKit:callback setUpBackgroundDeliveryForDataTypes()");
                     
-                    [self setUpBackgroundDeliveryForDataTypes:readDataTypes];
+                    // TOOO: Uncomment?
+                    //[self setUpBackgroundDeliveryForDataTypes:readDataTypes];
                     //Over
                     callback(@[[NSNull null], @true]);
                 });
@@ -482,14 +482,14 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         endDate = [dateFormatter dateFromString:endDateString];
         predicate = [HKQuery predicateForSamplesWithStartDate:startDate endDate:endDate options:HKQueryOptionNone];
     }
-    [self readHealthKitData:input predicate:predicate callback:callback];
+    [self readHealthKitData:input predicate:predicate callback:callback healthKitCallback: nil];
 }
 
 // Reads Health Kit Data
 // This method is called from JS with a full single metric
 // to be read and returned from HealthKit
--(void)readHealthKitData:(NSDictionary *    )input predicate:(NSPredicate *)predicate callback:(RCTResponseSenderBlock)callback {
-    
+-(void)readHealthKitData:(NSDictionary *)input predicate:(NSPredicate *)predicate callback:(RCTResponseSenderBlock)callback healthKitCallback: (void (^)())healthKitCallback {
+            
     // Get the type to process
     NSString *option = [input objectForKey:@"metric"];
     HKQuantityType *key = [self getReadPermFromOption:option];
@@ -586,7 +586,10 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
 
                                        [self processHealthKitResult:allObjects
                                                      deletedObjects:emptyDeletedObjects
-                                                           callback:callback key:key  anchor:anchor];
+                                                           callback:callback
+                                                  healthKitCallback: (void (^)())healthKitCallback
+                                                                key:key
+                                                             anchor:anchor];
                     
                                    }];
             }
@@ -595,6 +598,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                 [self processHealthKitResult:allObjects
                               deletedObjects:deletedObjects
                                     callback:callback
+                           healthKitCallback: (void (^)())healthKitCallback
                                          key:key
                                       anchor:anchor];
                 
@@ -1300,7 +1304,10 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
 // Add the results returned from HealthKit for a specific reading type to the jsonObject
 // If finished, call back to JS
 -(void)processHealthKitResult:(NSArray *)allObjects
-               deletedObjects:(NSArray *)deletedObjects callback:(RCTResponseSenderBlock)callback key:(HKQuantityType *)key
+               deletedObjects:(NSArray *)deletedObjects
+                     callback:(RCTResponseSenderBlock)callback
+            healthKitCallback: (void (^)())healthKitCallback
+                          key:(HKQuantityType *)key
                        anchor:(HKQueryAnchor *)anchor
 {
     NSMutableArray *jsonArray;
@@ -1338,10 +1345,12 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
     }
     
     NSLog(@"20xxx01. processHealthKitResult() key:%@ ", key.identifier);
-    [self callBackHealthKitResults:callback];
+    [self callBackHealthKitResults:callback key:key healthKitCallback: (void (^)())healthKitCallback];
 }
 
 -(void)callBackHealthKitResults:(RCTResponseSenderBlock)callback
+                            key:(HKQuantityType *)key
+              healthKitCallback: (void (^)())healthKitCallback
 {
     @autoreleasepool {
 
@@ -1349,17 +1358,22 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         NSLog(@"11xxx07. callBackHealthKitResults() callback to JS");
         
         NSMutableDictionary *jsonFinalObject = [[NSMutableDictionary alloc] init];
-        [jsonFinalObject setObject: self.jsonObject forKey:@"added"];
-        [jsonFinalObject setObject: self.jsonDeletedObject forKey:@"deleted"];
+        NSMutableDictionary *readingsDictionary = [[NSMutableDictionary alloc] init];
+        [readingsDictionary setObject: self.jsonObject forKey:@"added"];
+        [readingsDictionary setObject: self.jsonDeletedObject forKey:@"deleted"];
+        [jsonFinalObject setObject:readingsDictionary forKey:@"data"];
+        [jsonFinalObject setObject:key forKey:@"type"];
+
         
         // MEMORY:
         self.jsonCallbackObject = nil;
         self.jsonDeletedObject = nil;
         
         NSLog(@"%@ count:%lu", self.currentMetric, (unsigned long)[self.jsonObject count]);
-        callback(@[[NSNull null], jsonFinalObject]);
+        //callback(@[[NSNull null], jsonFinalObject]);
 
         jsonFinalObject = nil;
+        healthKitCallback();     // This is set if it's a background update
         return;
 
     }
@@ -1825,55 +1839,64 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
 }
 
 //Akshay
--(void)setUpBackgroundDeliveryForDataTypes :(NSSet*) types {
+-(void)setUpBackgroundDeliveryForDataTypes :(NSArray*) types callback:(RCTResponseSenderBlock)callback {
     
     for (id key in types) {
         
-        if ([key isKindOfClass:HKSampleType.class]) {
+        HKQuantityType *hkMetric = [self getReadPermFromOption:key];
+        
+        if ([hkMetric isKindOfClass:HKSampleType.class]) {
             
             // Create the query object
-            NSLog(@"00xxxc2. setUpBackgroundDeliveryForDataTypes() create the query for type: %@", ((HKQuantityType *)key).identifier);
+            NSLog(@"00xxxc2. setUpBackgroundDeliveryForDataTypes() create the query for type: %@", ((HKQuantityType *)hkMetric).identifier);
             
             // This is not a query for actual data. It's a query to observer a
             // specific type of data. The handler is executed when that type of data changes
-            HKObserverQuery *query = [[HKObserverQuery alloc] initWithSampleType:key
+            HKObserverQuery *query = [[HKObserverQuery alloc] initWithSampleType:hkMetric
                                                                        predicate:nil
                                                                    updateHandler:^(HKObserverQuery * _Nonnull query,
                                                                                    HKObserverQueryCompletionHandler  _Nonnull
                                                                                    completionHandler,
                                                                                    NSError * _Nullable error) {
-                                                                       
-                                                                      NSLog(@"00xxxc5. HKObserverQuery updateHandler() key: %@", ((HKQuantityType *)key).identifier);
-                                                                       
-                                                                       // TODO: Decide what to do here. Possibly send notification of updates
-                                                                       //[self queryForUpdates:key];
-                                                                       
-                                                                       // [_bridge.eventDispatcher sendAppEventWithName:@"change:observed" body:key];
-                                                                       
-                                                                       completionHandler();
-                                                                   }];
+                
+                NSLog(@"00xxxc5. HKObserverQuery updateHandler() key: %@", ((HKQuantityType *)hkMetric).identifier);
+                // TODO: Decide what to do here. Possibly send notification of updates
+                //[self queryForUpdates:key];
+                // [_bridge.eventDispatcher sendAppEventWithName:@"change:observed" body:key];
+
+                NSDictionary *metricDictionary = @{ @"metric" : key};
+                
+                [self readHealthKitData:metricDictionary
+                              predicate:nil
+                               callback:callback
+                 healthKitCallback: ^void() {
+                    completionHandler();
+                }];
+                
+                
+            }];
             
             // Execute the observer query object
-            NSLog(@"00xxxc3 setUpBackgroundDeliveryForDataTypes() execute query for type: %@", ((HKQuantityType *)key).identifier);
+            NSLog(@"00xxxc3 setUpBackgroundDeliveryForDataTypes() execute query for type: %@", ((HKQuantityType *)hkMetric).identifier);
             [self.healthStore executeQuery:query];
             
             // Enable delivery of background updates
             // HKUpdateFrequencyImmediate launches the app every time it detects a change
-            NSLog(@"00xxxc4 setUpBackgroundDeliveryForDataTypes() enableBackgroundDeliveryForType:%@", ((HKQuantityType *)key).identifier);
+            NSLog(@"00xxxc4 setUpBackgroundDeliveryForDataTypes() enableBackgroundDeliveryForType:%@", ((HKQuantityType *)hkMetric).identifier);
             
-            [self.healthStore enableBackgroundDeliveryForType:key
+            [self.healthStore enableBackgroundDeliveryForType:hkMetric
                                                     frequency:HKUpdateFrequencyImmediate
                                                withCompletion:^(BOOL success, NSError * _Nullable error) {
                                                 
                             // This just tells you if the registration for background delivery worked
                             if (success) {
-                                NSLog(@"00xxxc5. enableBackgroundDeliveryForType handler called for %@ - SUCCESS error:%@", key, error.description);
+                                NSLog(@"00xxxc5. enableBackgroundDeliveryForType handler called for %@ - SUCCESS error:%@", hkMetric, error.description);
                             }
                             else {
-                                NSLog(@"00xxxc5. enableBackgroundDeliveryForType handler called for %@ - FAILED error:%@", key, error.description);
+                                NSLog(@"00xxxc5. enableBackgroundDeliveryForType handler called for %@ - FAILED error:%@", hkMetric, error.description);
                             }
                                                    
-                                               }];
+            }];
         }
     }
 }
