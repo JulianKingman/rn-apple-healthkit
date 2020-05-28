@@ -1370,7 +1370,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         self.jsonDeletedObject = nil;
         
         NSLog(@"%@ count:%lu", self.currentMetric, (unsigned long)[self.jsonObject count]);
-        //callback(@[[NSNull null], jsonFinalObject]);
+        callback(@[[NSNull null], jsonFinalObject]);
 
         jsonFinalObject = nil;
         healthKitCallback();     // This is set if it's a background update
