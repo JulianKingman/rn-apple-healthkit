@@ -1373,7 +1373,10 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         callback(@[[NSNull null], jsonFinalObject]);
 
         jsonFinalObject = nil;
-        healthKitCallback();     // This is set if it's a background update
+        if (healthKitCallback) {
+            healthKitCallback();
+        }
+             // This is set if it's a background update
         return;
 
     }
