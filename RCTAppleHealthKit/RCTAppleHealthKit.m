@@ -548,30 +548,18 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                 options = HKStatisticsOptionCumulativeSum;
                 interval.day = 1;  // steps
             }
-
-            __block NSDate *startDate;
-            __block NSDate *endDate;
             
-            if (isFirstQueryForType) {
+            // This is NOT the first time through. Do an anchored query first, solely to get the anchor from HK. The data is cleared and never passed back
+            
+            [self queryForUpdates:key predicate:predicate clearData:true completion:^(NSArray * allObjects, NSArray * deletedObjects, NSError * error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
                 
-                // This is NOT the first time through. Do an anchored query first, solely to get the anchor from HK. The data is cleared and never passed back
-                [self queryForUpdates:key predicate:predicate clearData:true completion:^(NSArray * allObjects, NSArray * deletedObjects, NSError * error, HKQueryAnchor *anchor) {
+                if (readingsStartDate != nil) {
                 
-                    // This is the first time through, just use the HK start date as the start date
-                    // and today as the end date and don't get the metric detail first
-                    NSString *dateStr = @"20140914";
-
-                    // Convert string to date object
-                    NSDateFormatter *dateFormat = [[NSDateFormatter alloc] init];
-                    [dateFormat setDateFormat:@"yyyyMMdd"];
-                    startDate = [dateFormat dateFromString:dateStr];
-                    endDate = [NSDate date];
-                    
                     // Get a summary of the specified metric
                     [self queryForQuantitySummary:key
                                              unit:[HKUnit countUnit]
-                                        startDate:startDate
-                                          endDate:endDate
+                                        startDate:readingsStartDate
+                                          endDate:readingsEndDate
                                          interval:interval
                                           options:options
                                            userId:self.userId
@@ -588,80 +576,21 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                                                                  anchor:anchor];
                         
                     }];
-                }];
-            }
-            else {
+                }
+                else {
+                    
+                    [self processHealthKitResult:allObjects
+                                  deletedObjects:deletedObjects
+                                        callback:callback
+                               healthKitCallback: (void (^)())healthKitCallback
+                                             key:key
+                                          anchor:anchor];
+                    
+                }
+
                 
-                // This is NOT the first time through. Do an anchored query first, then get the summary
-                // based on the oldest and newest dates returned in the anchored query
-                [self queryForUpdates:key predicate:predicate clearData:false completion:^(NSArray * allObjects, NSArray * deletedObjects, NSError * error, HKQueryAnchor *anchor) {
-                    
-                    if (allObjects.count > 0) {
-                        // If this is not the first time through, look at the initial queryForUpdates
-                        // results and set a start and end date accordingly
-                        if (!isFirstQueryForType && (allObjects.count > 0 || deletedObjects.count > 0)) {
-                            // Make sure all records are sorted by startDate
-                            NSSortDescriptor * descriptor = [[NSSortDescriptor alloc] initWithKey:@"startDate" ascending:YES];
-                            allObjects = [allObjects sortedArrayUsingDescriptors:@[descriptor]];
-                            // Get start date from first item in array
-                            NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
-                            [dateFormatter setDateFormat:@"yyyy-MM-dd'T'HH:mm"];
-                            NSString *startDateString = [((NSDictionary *)allObjects[0]) valueForKey:@"startDate"];
-                            NSString *endDateString = [((NSDictionary *)allObjects[allObjects.count-1])valueForKey:@"endDate"];
-                            startDate = [dateFormatter dateFromString: startDateString];
-                            endDate = [dateFormatter dateFromString: endDateString];
-                        }
-                        
-                        // MEMORY:
-                        allObjects = nil;
-                        deletedObjects = nil;
-                        
-                        // Get a summary instead
-                        [self queryForQuantitySummary:key
-                                                 unit:[HKUnit countUnit]
-                                            startDate:startDate
-                                              endDate:endDate
-                                             interval:interval
-                                              options:options
-                                               userId:self.userId
-                                           completion:^(NSArray * allObjects, NSError *error) {
+            }];
 
-                                                // TODO: Check out alternative ways of tracking deleted records for summary
-                                                NSArray *emptyDeletedObjects = [[NSArray alloc] init];
-
-                                               [self processHealthKitResult:allObjects
-                                                             deletedObjects:emptyDeletedObjects
-                                                                   callback:callback
-                                                          healthKitCallback: (void (^)())healthKitCallback
-                                                                        key:key
-                                                                     anchor:anchor];
-
-                                           }];
-                    }
-                    else {
-                        
-                        [self processHealthKitResult:allObjects
-                                      deletedObjects:deletedObjects
-                                            callback:callback
-                                   healthKitCallback: (void (^)())healthKitCallback
-                                                 key:key
-                                              anchor:anchor];
-                        
-                        // MEMORY:
-                        allObjects = nil;
-                        deletedObjects = nil;
-                    }
-                    
-                }];
-            }
-
-
-//
-//            // MEMORY:
-//            allObjects = nil;
-//            deletedObjects = nil;
-
-            
 //            // TODO: Temp
 //            NSMutableDictionary *jsonFinalObject = [[NSMutableDictionary alloc] init];
 //            callback(@[[NSNull null], jsonFinalObject]);
@@ -669,7 +598,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
         else
         {
         
-            [self queryForUpdates:key predicate:predicate clearData:false completion:^(NSArray * allObjects, NSArray * deletedObjects, NSError * error, HKQueryAnchor *anchor) {
+            [self queryForUpdates:key predicate:predicate clearData:false completion:^(NSArray * allObjects, NSArray * deletedObjects, NSError * error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
                                       
                     [self processHealthKitResult:allObjects
                                   deletedObjects:deletedObjects
@@ -694,250 +623,250 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
 -(void)queryForUpdates:(HKQuantityType *)type
              predicate:(NSPredicate *)predicate
              clearData:(BOOL)clearData
-            completion:(void (^)(NSArray *,NSArray *, NSError *, HKQueryAnchor *anchor))completion
+            completion:(void (^)(NSArray *,NSArray *, NSError *, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate))completion
 {
     NSString *str = type.identifier;
     
     NSLog(@"00xxxc7. queryForUpdates() type.identifier = %@", str);
     
     if ([str isEqualToString:HKQuantityTypeIdentifierDietaryFatMonounsaturated]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryFatPolyunsaturated]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
             
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryFatSaturated]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryFatTotal]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryEnergyConsumed]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryFiber]) {
-        [self getIndividualRecords:type unit:[HKUnit kilocalorieUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit kilocalorieUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryFolate]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryIodine]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryIron]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryMagnesium]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryManganese]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryMolybdenum]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryNiacin]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryPantothenicAcid]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryPhosphorus]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryPotassium]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryProtein]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryCarbohydrates]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryRiboflavin]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierDietarySelenium]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierDietarySodium]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierDietarySugar]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryThiamin]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryVitaminA]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryVitaminB12]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryVitaminB6]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryVitaminC]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryVitaminD]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryVitaminE]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryVitaminK]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryZinc]) {
-        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit gramUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierDietaryWater]) {
-        [self getIndividualRecords:type unit:[HKUnit literUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit literUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierHeartRate]) {//DONE EARLIER
-        [self getIndividualRecords:type unit:[HKUnit countUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit countUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierLeanBodyMass]) {//DONE
-        [self getIndividualRecords:type unit:[HKUnit poundUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit poundUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKCorrelationTypeIdentifierBloodPressure]) {//DONE
         [self getIndividualRecords:type unit:[HKUnit millimeterOfMercuryUnit]
                          predicate:predicate
                           clearData:clearData
-                        completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-                            completion(results, arrDeleted, error, anchor);
+                        completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+                            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
                         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierBodyMassIndex]) {//DONE
-        [self getIndividualRecords:type unit:[HKUnit mileUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit mileUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierBodyFatPercentage]) {//DONE
-        [self getIndividualRecords:type unit:[HKUnit percentUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit percentUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierRespiratoryRate]) {//DONE
-        [self getIndividualRecords:type unit:[HKUnit countUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit countUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierDistanceCycling]) {//DONE
-        [self getIndividualRecords:type unit:[HKUnit mileUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit mileUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierStepCount]) {//DONE
-        [self getIndividualRecords:type unit:[HKUnit countUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit countUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierActiveEnergyBurned]) {//DONE
-        [self getIndividualRecords:type unit:[HKUnit kilocalorieUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit kilocalorieUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierBasalBodyTemperature]) {
-        [self getIndividualRecords:type unit:[HKUnit degreeFahrenheitUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit degreeFahrenheitUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierBodyTemperature]) {
-        [self getIndividualRecords:type unit:[HKUnit degreeFahrenheitUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit degreeFahrenheitUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierBasalEnergyBurned]) {//DONE
-        [self getIndividualRecords:type unit:[HKUnit kilocalorieUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit kilocalorieUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierDistanceWalkingRunning]) {//DONE
-        [self getIndividualRecords:type unit:[HKUnit mileUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit mileUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierFlightsClimbed]) {//DONE
-        [self getIndividualRecords:type unit:[HKUnit kilocalorieUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit kilocalorieUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKCategoryTypeIdentifierSleepAnalysis]) {//Done
        // [self getCategoryQueriesResult:type unit:[HKUnit kilocalorieUnit]];
-        [self getIndividualRecords:type unit:[HKUnit kilocalorieUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit kilocalorieUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKCharacteristicTypeIdentifierDateOfBirth]) {//DONE
@@ -1025,49 +954,49 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierBodyMass]) {//DONE
         //[self getOtherQueriesResult:type unit:[HKUnit poundUnit]];
-        [self getIndividualRecords:type unit:[HKUnit poundUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit poundUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierBloodGlucose]) {//DONE
         //[self getOtherQueriesResult:type unit:[HKUnit poundUnit]];
-        [self getIndividualRecords:type unit:[HKUnit unitFromString: @"mg/dL"] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit unitFromString: @"mg/dL"] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierNikeFuel]) {
         //        [self getOtherQueriesResult:type unit:[HKUnit countUnit]];
     }
     else if ([str isEqualToString:HKCategoryTypeIdentifierMindfulSession]) {
-        [self getIndividualRecords:type unit:[HKUnit unitFromString: @"%/min"] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit unitFromString: @"%/min"] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if ([str isEqualToString:HKQuantityTypeIdentifierOxygenSaturation]) {
-        [self getIndividualRecords:type unit:[HKUnit countUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-            completion(results, arrDeleted, error, anchor);
+        [self getIndividualRecords:type unit:[HKUnit countUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+            completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
         }];
     }
     else if (@available(iOS 11.0, *)) {
         if ([str isEqualToString:HKQuantityTypeIdentifierHeartRateVariabilitySDNN]) {
-            [self getIndividualRecords:type unit:[HKUnit countUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-                completion(results, arrDeleted, error, anchor);
+            [self getIndividualRecords:type unit:[HKUnit countUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+                completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
             }];
         }
         else if ([str isEqualToString:HKQuantityTypeIdentifierWaistCircumference]) {
-            [self getIndividualRecords:type unit:[HKUnit inchUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-                completion(results, arrDeleted, error, anchor);
+            [self getIndividualRecords:type unit:[HKUnit inchUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+                completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
             }];
         }
         else if ([str isEqualToString:HKQuantityTypeIdentifierRestingHeartRate]) {
-            [self getIndividualRecords:type unit:[HKUnit countUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-                completion(results, arrDeleted, error, anchor);
+            [self getIndividualRecords:type unit:[HKUnit countUnit] predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+                completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
             }];
         }
         // mL/min·kg
         else if ([str isEqualToString:HKQuantityTypeIdentifierVO2Max]) {
-            [self getIndividualRecords:type unit:[HKUnit unitFromString: @"mL/min·kg"]  predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
-                completion(results, arrDeleted, error, anchor);
+            [self getIndividualRecords:type unit:[HKUnit unitFromString: @"mL/min·kg"]  predicate:predicate clearData:clearData completion:^(NSArray *results,NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate* readingsStartDate, NSDate* readingsEndDate) {
+                completion(results, arrDeleted, error, anchor, readingsStartDate, readingsEndDate);
             }];
         }
         else {
@@ -1084,7 +1013,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                         unit:(HKUnit *)unit
                    predicate:(NSPredicate *)predicate
                    clearData:(BOOL)clearData
-                  completion:(void (^)(NSMutableArray *,NSMutableArray *, NSError *, HKQueryAnchor *))completion
+                  completion:(void (^)(NSMutableArray *,NSMutableArray *, NSError *, HKQueryAnchor *, NSDate *, NSDate *))completion
 {
     NSUInteger limit = HKObjectQueryNoLimit;
     BOOL ascending = false;
@@ -1095,7 +1024,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                        clearData:clearData
                        ascending:ascending
                            limit:limit
-                      completion:^(NSArray *results, NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor) {
+                      completion:^(NSArray *results, NSArray *arrDeleted, NSError *error, HKQueryAnchor *anchor, NSDate *readingsStartDate, NSDate *readingsEndDate) {
                           
                           // Completion handler called from HKAnchoredObjectQuery
                           if(results) {
@@ -1109,7 +1038,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                               arrDeleted = nil;
 
                               // Call the completion handler
-                              completion(self.readingsArray, arrayDeleted, nil, anchor);
+                              completion(self.readingsArray, arrayDeleted, nil, anchor, readingsStartDate, readingsEndDate);
                               
                               // MEMORY:
                               self.readingsArray = nil;
@@ -1117,12 +1046,12 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                           }
                           else {
                               NSLog(@"Error fetching samples from HealthKit: %@", error);
-                              completion(nil, nil, error, anchor);
+                              completion(nil, nil, error, anchor, readingsStartDate, readingsEndDate);
                           }
                       }];
 }
 
--(void)fetchIndividualRecords :(HKQuantityType *)type unit:(HKUnit *)unit predicate:(NSPredicate *)predicate clearData:(BOOL)clearData ascending:(BOOL)asc limit:(NSUInteger)lim completion:(void (^)(NSArray *,NSArray *, NSError *, HKQueryAnchor *))completion {
+-(void)fetchIndividualRecords :(HKQuantityType *)type unit:(HKUnit *)unit predicate:(NSPredicate *)predicate clearData:(BOOL)clearData ascending:(BOOL)asc limit:(NSUInteger)lim completion:(void (^)(NSArray *,NSArray *, NSError *, HKQueryAnchor *, NSDate *, NSDate *))completion {
     
     HKQueryAnchor *newAnchor = nil;
     
@@ -1164,6 +1093,17 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
 //                  (unsigned long)deletedObjects.count);
         
             NSMutableArray *arrUUID = [[NSMutableArray alloc]init];
+            NSDate *readingsStartDate;
+            NSDate *readingsEndDate;
+            if (sampleObjects.count > 0 || deletedObjects.count > 0) {
+                // Make sure all records are sorted by startDate
+                NSSortDescriptor * descriptor = [[NSSortDescriptor alloc] initWithKey:@"startDate" ascending:YES];
+                sampleObjects = [sampleObjects sortedArrayUsingDescriptors:@[descriptor]];
+                HKQuantitySample *sample = [sampleObjects objectAtIndex:0];
+                readingsStartDate = sample.startDate;
+                sample = [sampleObjects objectAtIndex:sampleObjects.count-1];
+                readingsEndDate = sample.endDate;
+            }
 
             if (clearData) {
                 // Caller doesn't want the data, just the anchor
@@ -1181,7 +1121,7 @@ RCT_EXPORT_METHOD(saveMindfulSession:(NSDictionary *)input callback:(RCTResponse
                 newAnchor = nil;
             }
             
-            completion(sampleObjects, arrUUID, error, newAnchor);
+            completion(sampleObjects, arrUUID, error, newAnchor, readingsStartDate, readingsEndDate);
             // MEMORY:
             sampleObjects = nil;
             arrUUID = nil;
